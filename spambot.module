@@ -1,0 +1,61 @@
+<?php
+// $Id$ 
+/**
+* Implementation of hook_form_alter().
+*/
+
+function spambot_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_register' || $form_id == 'user_edit') {
+//     drupal_set_message("<pre>" . print_r($form['#validate'], TRUE). "</pre>");
+//     $form['#validate'] = array('spambot_username_validate');
+    array_push($form['#validate'], 'spambot_username_validate');
+  }
+}
+/**
+ * Validation function
+ *
+ * @param mixed $element Posted form structure
+ */
+function spambot_username_validate ($element) {
+// exipioauro@gmail.com
+  $mail = urlencode($element['#post']['mail']);
+  $name = urlencode($element['#post']['name']);
+  if ($mail && _spambot_request('http://www.stopforumspam.com/api?email=' . $mail)) {
+    $block = true;
+    watchdog("spambot", t("blocked spambot: @mail", array("@mail"=>$mail)));
+  } else if ($name && _spambot_request('http://www.stopforumspam.com/api?username=' . $name)) {
+    $block = true;
+    watchdog("spambot", t("blocked spambot: @name", array("@name"=>$name)));
+  }
+  if ($block) {
+    form_set_error('name', t("Blacklisted. Now go away!"));
+    form_set_error('mail', t("Blacklisted. Now go away!"));
+  }
+}
+function _spambot_request($url) {
+  // create curl resource
+  $ch = curl_init();
+
+  // set url
+  curl_setopt($ch, CURLOPT_URL, $url);
+
+  //return the transfer as a string
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  // $output contains the output string
+  $output = curl_exec($ch);
+  if ($output === FALSE) {
+    $error = curl_error($ch);
+    curl_close($ch);     
+    watchdog("spambot", t("curl returned error: @error, request: @request",
+      array("@error"=>$error, "@request"=>$url)));
+    return false;
+  }
+  curl_close($ch);     
+  $xml = new SimpleXMLElement($output);
+//   drupal_set_message("<pre>" . htmlentities(print_r($xml, TRUE)). "</pre>");
+  if($xml->appears == 'yes'){
+    return true;
+  }
+  return false;
+}

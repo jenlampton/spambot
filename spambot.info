@@ -1,0 +1,5 @@
+; $Id$
+name = spambot
+description = Block spambots from applying for a new user account
+version = 6.x-1.0
+core = 6.x
