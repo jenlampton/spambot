@@ -11,7 +11,6 @@ function spambot_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spambot_admin_form'),
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_CALLBACK
   );
   return $items;
 }
@@ -24,6 +23,12 @@ function spambot_admin_form() {
     '#default_value' => variable_get('spambot_sfs_api_key', ''),
     '#description' => t('To report spammers to SFS you need to register for '
       . 'an API key at the <a href="@sfs">Stop Forum Spam web site</a>.', array('@sfs'=>url("http://www.stopforumspam.com/signup"))),
+  );
+  $form['spambot_blocked_message'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t("Blocked message"),
+    '#default_value' => variable_get('spambot_blocked_message', t("Blacklisted. Now go away!")),
+    '#description' => t('Message to display when user registration is blocked.'),
   );
   return system_settings_form($form);
 }
@@ -48,16 +53,20 @@ function spambot_username_validate ($element) {
 // exipioauro@gmail.com
   $mail = urlencode($element['#post']['mail']);
   $name = urlencode($element['#post']['name']);
+  $ip = urlencode(ip_address());
   if ($mail && _spambot_request_boolean('http://www.stopforumspam.com/api?email=' . $mail)) {
     $block = true;
     watchdog("spambot", t("blocked spambot: @mail", array("@mail"=>$mail)));
   } else if ($name && _spambot_request_boolean('http://www.stopforumspam.com/api?username=' . $name)) {
     $block = true;
     watchdog("spambot", t("blocked spambot: @name", array("@name"=>$name)));
+  } else if ($name && _spambot_request_boolean('http://www.stopforumspam.com/api?ip=' . $ip)) {
+    $block = true;
+    watchdog("spambot", t("blocked spambot: @ip", array("@ip"=>$ip)));
   }
   if ($block) {
-    form_set_error('name', t("Blacklisted. Now go away!"));
-    form_set_error('mail', t("Blacklisted. Now go away!"));
+    form_set_error('name', variable_get('spambot_blocked_message', t("Blacklisted. Now go away!")));
+    form_set_error('mail', variable_get('spambot_blocked_message', t("Blacklisted. Now go away!")));
   }
 }
 /**
