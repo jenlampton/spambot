@@ -1,5 +1,4 @@
 ; $Id$
-name = spambot
-description = Block spambots from applying for a new user account
-version = 6.x-1.0
+name = Spambot
+description = Anti-spam module that uses data from www.stopforumspam.com to protect the user registration form against known spammers and spambots. 
 core = 6.x
