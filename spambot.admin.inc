@@ -87,7 +87,7 @@ function spambot_settings_form($form_state) {
   $form['spambot_sfs_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('www.stopforumspam.com API key'),
-    '#description' => 'If you wish to report spammers to Stop Forum Spam, you need to register for an API key at the <a href="http://www.stopforumspam.com">Stop Forum Spam</a> website.',
+    '#description' => t('If you wish to report spammers to Stop Forum Spam, you need to register for an API key at the <a href="http://www.stopforumspam.com">Stop Forum Spam</a> website.'),
     '#default_value' => variable_get('spambot_sfs_api_key', FALSE),
   );
 

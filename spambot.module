@@ -85,6 +85,37 @@ function spambot_user_register_validate($form, &$form_state) {
 }
 
 /**
+ * Implementation of hook_user_operations()
+ */
+function spambot_user_operations($form_state = array()) {
+  $operations = array(
+    'spambot_report' => array(
+      'label' => t('Block and report the selected users as spammers'),
+      'callback' => 'spambot_user_operations_report',
+    ),
+  );
+  return $operations;
+}
+
+function spambot_user_operations_report($accounts) {
+  $key = variable_get('spambot_sfs_api_key', FALSE);
+  if (!$key) {
+    drupal_set_message(t('If you wish to report spammers to Stop Forum Spam, you need to register for an API key at the <a href="http://www.stopforumspam.com">Stop Forum Spam</a> website.'));
+  }
+  
+  foreach ($accounts as $uid) {
+    $account = user_load($uid);
+    // Skip blocking user if they are already blocked.
+    if ($account !== FALSE && $account->status == 1) {
+      user_save($account, array('status' => 0));
+    }
+    if ($key) {
+      spambot_report_account($account);
+    }
+  }
+}
+
+/**
  * Implementation of hook_cron
  */
 function spambot_cron() {
