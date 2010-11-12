@@ -3,29 +3,58 @@
 function spambot_settings_form($form_state) {
   $form = array();
 
+  $numbers = array(0 => t('Never'), 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10, 15 => 15, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 60 => 60, 70 => 70, 80 => 80, 90 => 90, 100 => 100, 150 => 150, 200 => 200);
+
   $form['criteria'] = array(
     '#type' => 'fieldset',
     '#title' => t('Spammer criteria'),
-    '#description' => t('How to decide whether a user or user registration is a spammer?'),
+    '#description' => t('A user account or an attempted user registration will be deemed a spammer if the email, username, or IP address has been reported to www.stopforumspam.com more times than the following thresholds.'),
     '#collapsible' => TRUE,
   );
   $form['criteria']['spambot_criteria_email'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Check email'),
-    '#description' => t('If the email address for a user or user registration is known to www.stopforumspam.com, then it is treated as a spammer.'),
-    '#default_value' => variable_get('spambot_criteria_email', TRUE),
+    '#type' => 'select',
+    '#title' => t('Number of times the email has been reported is equal to or more than'),
+    '#description' => t('If the email address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer.'),
+    '#options' => array(0 => t('Don\'t use email as a criteria')) + $numbers,
+    '#default_value' => variable_get('spambot_criteria_email', 1),
   );
   $form['criteria']['spambot_criteria_username'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Check username'),
-    '#description' => t('If the username is known to www.stopforumspam.com, then it is treated as a spammer. Be careful about enabling this option as you may accidentally block genuine users who happen to choose the same username as a known spammer.'),
-    '#default_value' => variable_get('spambot_criteria_username', FALSE),
+    '#type' => 'select',
+    '#title' => t('Number of times the username has been reported is equal to or more than'),
+    '#description' => t('If the username for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about using this option as you may accidentally block genuine users who happen to choose the same username as a known spammer.'),
+    '#options' => array(0 => t('Don\'t use username as a criteria')) + $numbers,
+    '#default_value' => variable_get('spambot_criteria_username', 0),
   );
   $form['criteria']['spambot_criteria_ip'] = array(
+    '#type' => 'select',
+    '#title' => t('Number of times the IP address has been reported is equal to or more than'),
+    '#description' => t('If the email address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about setting this threshold too low as IP addresses can change.'),
+    '#options' => array(0 => t('Don\'t use IP address as a criteria')) + $numbers,
+    '#default_value' => variable_get('spambot_criteria_ip', 20),
+  );
+
+  $form['register'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User registration'),
+    '#collapsible' => TRUE,
+  );
+  $form['register']['spambot_user_register_protect'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Check IP address'),
-    '#description' => t('If the IP address is known to www.stopforumspam.com, then it is treated as a spammer. Be careful about enabling this option as IP addresses can change, and you may accidentally block genuine users.'),
-    '#default_value' => variable_get('spambot_criteria_ip', FALSE),
+    '#title' => t('Protect the user registration form'),
+    '#description' => t('If ticked, new user registrations will be tested if they match any known spammers and blacklisted.'),
+    '#default_value' => variable_get('spambot_user_register_protect', TRUE),
+  );
+  $form['register']['spambot_blocked_message'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User registration blocked message'),
+    '#default_value' => variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.')),
+    '#description' => t('Message to display when user registration is blocked.'),
+  );
+  $form['register']['spambot_user_register_report'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Report blocked user registrations as spammers'),
+    '#description' => t('If ticked, new user registrations which were blocked as spammers are also reported to www.stopforumspam.com as spammers. Requires an API key.'),
+    '#default_value' => variable_get('spambot_user_register_report', FALSE),
   );
 
   $form['existing'] = array(
@@ -91,11 +120,5 @@ function spambot_settings_form($form_state) {
     '#default_value' => variable_get('spambot_sfs_api_key', FALSE),
   );
 
-  $form['spambot_blocked_message'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Blocked message'),
-    '#default_value' => variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.')),
-    '#description' => t('Message to display when user registration is blocked.'),
-  );
   return system_settings_form($form);
 }

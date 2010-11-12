@@ -26,3 +26,18 @@ function spambot_update_6300() {
   variable_set('spambot_criteria_ip', TRUE);
   return $ret;
 }
+
+function spambot_update_6301() {
+  $ret = array();
+  // Change criteria settings from booleans to numbers
+  if (variable_set('spambot_criteria_email', TRUE)) {
+    variable_set('spambot_criteria_email', 1);
+  }  
+  if (variable_set('spambot_criteria_username', FALSE)) {
+    variable_set('spambot_criteria_username', 1);
+  }
+  if (variable_set('spambot_criteria_ip', FALSE)) {
+    variable_set('spambot_criteria_ip', 1);
+  }
+  return $ret;
+}

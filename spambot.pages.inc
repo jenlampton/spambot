@@ -13,7 +13,7 @@ function spambot_user_spam_admin_form($form_state, $account) {
   $form = array();
   $form['check'] = array(
     '#type' => 'submit',
-    '#value' => t('Check if this user is a spammer'),
+    '#value' => t('Check if this account matches a known spammer'),
   );
 
   $form['action'] = array(
@@ -95,27 +95,59 @@ function spambot_user_spam_admin_form($form_state, $account) {
 function spambot_user_spam_admin_form_submit($form, &$form_state) {
   $account = user_load($form_state['values']['uid']);
   if ($form_state['values']['op'] == $form_state['values']['check']) {
-    // Only check email and username
+    // This is a more comprehensive check than the automated criteria checks.
+    // This tests everything.    
+    $messages = array();
+    $service_down = FALSE;
+
+    // Check email and username
     $request = array('email' => $account->mail, 'username' => $account->name);
     $data = array();
     if (spambot_sfs_request($request, $data)) {
-      $match = FALSE;
       if (!empty($data['email']['appears'])) {
-        drupal_set_message(t('This account\'s email address matches a known spammer: @email', array('@email' => $request['email'])));
-        $match = TRUE;
+        $messages[] = t('This account\'s email address matches @num times: @email', array('@email' => $request['email'], '@num' => $data['email']['frequency']));
       }
 
       if (!empty($data['username']['appears'])) {
-        drupal_set_message(t('This account\'s username matches a known spammer: @username', array('@username' => $request['username'])));
-        $match = TRUE;
-      }
-
-      if (!$match) {
-        drupal_set_message(t('No matches against known spammers found.'));
+        $messages[] = t('This account\'s username matches @num times: @username', array('@username' => $request['username'], '@num' => $data['username']['frequency']));
       }
     }
     else {
-      drupal_set_message(t('Error contacting service.'));
+      drupal_set_message(t('Error contacting service.'), 'warning');
+      $service_down = TRUE;
+    }
+
+    // Check IP addresses
+    if (!$service_down) {
+      $ips = spambot_account_ip_addresses($account);
+      foreach ($ips as $ip) {
+        // Skip the loopback interface
+        if ($ip == '127.0.0.1') {
+          continue;
+        }
+        
+        $request = array('ip' => $ip);
+        $data = array();
+        if (spambot_sfs_request($request, $data)) {
+          if (!empty($data['ip']['appears'])) {
+            $messages[] = t('An IP address @ip used by this account matches @num times.', array('@ip' => $ip, '@num' => $data['ip']['frequency']));
+          }
+        }
+        else {
+          drupal_set_message(t('Error contacting service.'), 'warning');
+          $service_down = TRUE;
+          break;
+        }
+      }
+    }
+
+    if (count($messages)) {
+      foreach ($messages as $message) {
+        drupal_set_message($message);
+      }
+    }
+    else {
+      drupal_set_message(t('No matches against known spammers found.'));
     }
   }
   else if ($form_state['values']['op'] == $form_state['values']['action']) {
