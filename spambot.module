@@ -102,6 +102,12 @@ function spambot_user_register_validate($form, &$form_state) {
           spambot_report_account($account, array($ip));
           watchdog('spambot', t('Reported as spammer: email=@email,username=@username,ip=@ip', array('@email' => $account->mail, '@username' => $account->name, '@ip' => $ip)));
         }
+
+        // Slow them down if configured
+        $delay = variable_get('spambot_blacklisted_delay', 0);
+        if ($delay) {
+          sleep($delay);
+        }
       }
     }
   }

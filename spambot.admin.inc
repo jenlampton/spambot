@@ -43,13 +43,26 @@ function spambot_settings_form($form_state) {
     '#title' => t('Protect the user registration form'),
     '#description' => t('If ticked, new user registrations will be tested if they match any known spammers and blacklisted.'),
     '#default_value' => variable_get('spambot_user_register_protect', TRUE),
-  );
+  ); 
   $form['register']['spambot_blocked_message'] = array(
     '#type' => 'textfield',
     '#title' => t('User registration blocked message'),
     '#default_value' => variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.')),
     '#description' => t('Message to display when user registration is blocked.'),
   );
+  
+  $sleep_options = array(0 => t('Don\'t delay'), 1 => t('1 second'));
+  foreach (array(2, 3, 4, 5, 10, 20, 30) as $num) {
+    $sleep_options[$num] = t('@num seconds', array('@num' => $num));
+  }
+  $form['register']['spambot_blacklisted_delay'] = array(
+    '#type' => 'select',
+    '#title' => t('If blacklisted, delay for'),
+    '#description' => t('If an attempted user registration is blacklisted, you can choose to deliberately delay the request. This can be useful for slowing them down if they continually try to register.<br />Be careful about choosing too large a value for this as it may exceed your PHP max_execution_time.'),
+    '#options' => $sleep_options,
+    '#default_value' => variable_get('spambot_blacklisted_delay', 0),
+  );
+
   $form['register']['spambot_user_register_report'] = array(
     '#type' => 'checkbox',
     '#title' => t('Report blocked user registrations as spammers'),
