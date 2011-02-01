@@ -28,7 +28,7 @@ function spambot_settings_form($form_state) {
   $form['criteria']['spambot_criteria_ip'] = array(
     '#type' => 'select',
     '#title' => t('Number of times the IP address has been reported is equal to or more than'),
-    '#description' => t('If the email address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about setting this threshold too low as IP addresses can change.'),
+    '#description' => t('If the IP address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about setting this threshold too low as IP addresses can change.'),
     '#options' => array(0 => t('Don\'t use IP address as a criteria')) + $numbers,
     '#default_value' => variable_get('spambot_criteria_ip', 20),
   );
