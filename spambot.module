@@ -340,14 +340,14 @@ function spambot_account_ip_addresses($account) {
   $hostnames = array();
 
   // Retrieve IPs from any sessions which may still exist
-  $result = db_query("SELECT DISTINCT hostname FROM {sessions} WHERE uid = %d ORDER BY timestamp DESC", $account->uid);
+  $result = db_query("SELECT DISTINCT hostname FROM {sessions} WHERE uid = %d", $account->uid);
   while ($object = db_fetch_object($result)) {
     $hostnames[] = $object->hostname;
   }
 
   // Retrieve IPs from comments
   if (module_exists('comments')) {
-    $result = db_query("SELECT DISTINCT hostname FROM {comments} WHERE uid = %d ORDER BY timestamp DESC", $account->uid);
+    $result = db_query("SELECT DISTINCT hostname FROM {comments} WHERE uid = %d", $account->uid);
     while ($object = db_fetch_object($result)) {
       $hostnames[] = $object->hostname;
     }
@@ -355,7 +355,7 @@ function spambot_account_ip_addresses($account) {
 
   // Retrieve IPs from statistics
   if (module_exists('statistics')) {
-    $result = db_query("SELECT DISTINCT hostname FROM {accesslog} WHERE uid = %d ORDER BY timestamp DESC", $account->uid);
+    $result = db_query("SELECT DISTINCT hostname FROM {accesslog} WHERE uid = %d", $account->uid);
     while ($object = db_fetch_object($result)) {
       $hostnames[] = $object->hostname;
     }
