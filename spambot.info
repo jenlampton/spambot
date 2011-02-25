@@ -1,4 +1,3 @@
-; $Id$
 name = Spambot
 description = Anti-spam module that uses data from www.stopforumspam.com to protect the user registration form against known spammers and spambots. 
 core = 6.x
