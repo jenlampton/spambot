@@ -139,7 +139,13 @@ function spambot_user_operations_report($accounts) {
       user_save($account, array('status' => 0));
     }
     if ($key) {
-      spambot_report_account($account);
+      $ips = spambot_account_ip_addresses($account);
+      if (count($ips)) {
+        spambot_report_account($account, $ips);
+      }
+      else {
+        drupal_set_message(t('Reporting %name as a spammer failed because there are no IP addresses stored for that user.', array('%name' => $account->name)));
+      }
     }
   }
 }
@@ -346,7 +352,7 @@ function spambot_account_ip_addresses($account) {
   }
 
   // Retrieve IPs from comments
-  if (module_exists('comments')) {
+  if (module_exists('comment')) {
     $result = db_query("SELECT DISTINCT hostname FROM {comments} WHERE uid = %d", $account->uid);
     while ($object = db_fetch_object($result)) {
       $hostnames[] = $object->hostname;
@@ -380,19 +386,14 @@ function spambot_account_ip_addresses($account) {
  *   Account to report
  * @param $ips
  *   An array of IP addresses to report.
- *   If not specified, then use ip addresses from spambot_account_ip_addresses()
  *   If there are no IPs, the report will fail. 
  *
  * @return
  *   TRUE if successful, FALSE if error
  */
-function spambot_report_account($account, $ips = NULL) {
+function spambot_report_account($account, $ips) {
   $success = FALSE;
   $key = variable_get('spambot_sfs_api_key', FALSE);
-
-  if (is_null($ips)) {
-    $ips = spambot_account_ip_addresses($account);
-  }
 
   if ($key && count($ips)) {
     $query['email'] = $account->mail;
