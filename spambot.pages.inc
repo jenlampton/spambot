@@ -1,16 +1,18 @@
 <?php
 
-function spambot_user_spam_admin_form($form_state, $account) {
-  $node_count = db_result(db_query("SELECT COUNT(nid) FROM {node} WHERE uid = %d", $account->uid));
+function spambot_user_spam_admin_form($form, &$form_state, $account) {
+  $node_count = db_select('node')->condition('uid', $account->uid, '=')
+    ->countQuery()->execute()->fetchField();
+  
   if (module_exists('comment')) {
-    $comment_count = db_result(db_query("SELECT COUNT(cid) FROM {comments} WHERE uid = %d", $account->uid));
+    $comment_count = db_select('comment')->condition('uid', $account->uid, '=')
+      ->countQuery()->execute()->fetchField();
     $status = t('This account has @n nodes and @c comments.', array('@n' => $node_count, '@c' => $comment_count));
   }
   else {
     $status = t('This account has @n nodes.', array('@n' => $node_count));
   }
 
-  $form = array();
   $form['check'] = array(
     '#type' => 'submit',
     '#value' => t('Check if this account matches a known spammer'),
@@ -187,36 +189,21 @@ function spambot_user_spam_admin_form_submit($form, &$form_state) {
     }
 
     // Prepare some data
-    $nodes = array();
-    $result = db_query("SELECT nid FROM {node} WHERE uid = %d ORDER BY nid", $account->uid);
-    while ($object = db_fetch_object($result)) {
-      $nodes[$object->nid] = $object->nid;
-    }
+    $nodes = db_select('node')->fields('node', array('nid'))
+      ->condition('uid', $account->uid, '=')->orderBy('nid')->execute()->fetchCol();
 
     $comments = array();
     if (module_exists('comment')) {
-      $result = db_query("SELECT cid FROM {comments} WHERE uid = %d ORDER BY cid", $account->uid);
-      while ($object = db_fetch_object($result)) {
-        $comments[$object->cid] = $object->cid;
-      }
+      $comments = db_select('comment')->fields('comment', array('cid'))
+        ->condition('uid', $account->uid, '=')->orderBy('cid')->execute()->fetchCol();
     }
 
     // Delete nodes and content
     if (!empty($form_state['values']['delete_content'])) {
-      if (count($nodes)) {
-        foreach ($nodes as $nid) {
-          node_delete($nid);        
-        }
-      }
+      node_delete_multiple($nodes);
 
       if (count($comments)) {
-        foreach ($comments as $cid) {
-          $comment = _comment_load($cid);
-          module_load_include('inc', 'comment', 'comment.admin');
-          _comment_delete_thread($comment);
-          _comment_update_node_statistics($comment->nid);
-        }
-        cache_clear_all();
+        comment_delete_multiple($comments);
       }
 
       drupal_set_message(t('Nodes and comments have been deleted.'));
@@ -229,7 +216,8 @@ function spambot_user_spam_admin_form_submit($form, &$form_state) {
       }
 
       if (count($comments)) {
-        db_query("UPDATE {comments} SET status = %d WHERE uid = %d", COMMENT_NOT_PUBLISHED, $account->uid);
+        db_update('comment')->fields(array('status' => COMMENT_NOT_PUBLISHED))
+          ->condition('uid', $account->uid)->execute();
         cache_clear_all();
       }
       drupal_set_message(t('Nodes and comments have been unpublished.'));
@@ -238,7 +226,7 @@ function spambot_user_spam_admin_form_submit($form, &$form_state) {
     // Delete user
     if (!empty($form_state['values']['delete_user'])) {
       // Redirect to user delete form
-      $form_state['redirect'] = 'user/' . $account->uid . '/delete';
+      $form_state['redirect'] = 'user/' . $account->uid . '/cancel';
     }
   }
 }

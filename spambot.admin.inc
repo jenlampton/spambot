@@ -1,8 +1,6 @@
 <?php
 
-function spambot_settings_form($form_state) {
-  $form = array();
-
+function spambot_settings_form($form, &$form_state) {
   $numbers = array(0 => t('Never'), 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10, 15 => 15, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 60 => 60, 70 => 70, 80 => 80, 90 => 90, 100 => 100, 150 => 150, 200 => 200);
 
   $form['criteria'] = array(
@@ -98,17 +96,27 @@ function spambot_settings_form($form_state) {
   // Show scan status
   $last_uid = variable_get('spambot_last_checked_uid', 0);
   $suffix = '';
-  if ($last_uid) {
-    $num_checked = db_result(db_query("SELECT COUNT(uid) FROM {users} WHERE uid > 1 AND uid <= %d", $last_uid));
-    $num_left = db_result(db_query("SELECT COUNT(uid) FROM {users} WHERE uid > 1 AND uid > %d", $last_uid));
-    $last_uid = db_result(db_query("SELECT uid FROM {users} WHERE uid > 1 AND uid <= %d ORDER BY uid DESC LIMIT 1", $last_uid));   
+  if ($last_uid) {   
+    $num_checked = db_select('users')->fields('users')
+      ->condition('uid', '1', '>')->condition('uid', $last_uid, '<=')      
+      ->countQuery()->execute()->fetchField();
 
-    $account = user_load($last_uid);
+    $num_left = db_select('users')->fields('users')
+      ->condition('uid', '1', '>')->condition('uid', $last_uid, '>')
+      ->countQuery()->execute()->fetchField();
+
+    $last_uid = db_select('users')->fields('users', array('uid'))
+      ->condition('uid', '1', '>')->condition('uid', $last_uid, '<=')
+      ->orderBy('uid', 'DESC')->range(0, 1)
+      ->execute()->fetchField();
+    
+    $account = user_load((int) $last_uid);
     $suffix = '<br />' . t('The last checked user account is: !account (uid @uid)', array('!account' => l(check_plain($account->name), 'user/' . $account->uid), '@uid' => $account->uid));
   }
   else {
     $num_checked = 0;
-    $num_left = db_result(db_query("SELECT COUNT(uid) FROM {users} WHERE uid > 1"));
+    $num_left = db_select('users')->fields('users')->condition('uid', 1, '>')
+      ->countQuery()->execute()->fetchField();
   }
 
   $text = t('Accounts checked: @checked, Accounts remaining: @remaining', array('@checked' => $num_checked, '@remaining' => $num_left));
