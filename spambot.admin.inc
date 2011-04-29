@@ -84,7 +84,7 @@ function spambot_settings_form($form, &$form_state) {
   $form['existing']['spambot_spam_account_action'] = array(
     '#type' => 'select',
     '#title' => t('Action to take'),
-    '#description' => t('Please select what action to take for user accounts which are found to be spammers.'),
+    '#description' => t('Please select what action to take for user accounts which are found to be spammers.<br />No action will be taken against accounts with the permission <em>protected from spambot scans</em> but they will be logged.'),
     '#options' => array(
       SPAMBOT_ACTION_NONE => t('None, just log it.'),
       SPAMBOT_ACTION_BLOCK => t('Block user account'),

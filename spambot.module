@@ -10,6 +10,17 @@ define('SPAMBOT_ACTION_BLOCK', 1);
 define('SPAMBOT_ACTION_DELETE', 2);
 
 /**
+ * Implements hook_permission()
+ */
+function spambot_permission() {
+  return array(
+    'protected from spambot scans' => array(
+      'title' => t('Protected from spambot scans')
+    ),
+  );
+}
+
+/**
  * Implements hook_menu().
  */
 function spambot_menu() {
@@ -168,7 +179,7 @@ function spambot_cron() {
       $result = spambot_account_is_spammer($account);
       if ($result > 0) {
         $link = l(t('spammer'), 'user/' . $account->uid);
-        switch ($action) {
+        switch (user_access('protected from spambot scans', $account) ? SPAMBOT_ACTION_NONE : $action) {
           case SPAMBOT_ACTION_BLOCK:
             user_save($account, array('status' => 0));
             watchdog('spambot', 'Blocked spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
