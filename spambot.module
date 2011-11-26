@@ -400,7 +400,7 @@ function spambot_report_account($account, $ips) {
       
       $url = 'http://www.stopforumspam.com/add.php?' . http_build_query($query, '', '&');
       $result = drupal_http_request($url);
-      if (!empty($result->code) && $result->code == 200 && !empty($result->data) && strpos($result->data, 'Data submitted successfully')) {
+      if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
         // If one report is successful, then all are successful
         $success = TRUE;
       }
