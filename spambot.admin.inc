@@ -43,7 +43,7 @@ function spambot_settings_form($form, &$form_state) {
     '#default_value' => variable_get('spambot_user_register_protect', TRUE),
   ); 
   $form['register']['spambot_blocked_message'] = array(
-    '#type' => 'textfield',
+    '#type' => 'textarea',
     '#title' => t('User registration blocked message'),
     '#default_value' => variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.')),
     '#description' => t('Message to display when user registration is blocked.'),
