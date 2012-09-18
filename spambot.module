@@ -256,11 +256,11 @@ function spambot_sfs_request($query, &$data) {
       return TRUE;
     }
     else {
-      watchdog('spambot', 'Request unsuccessful: @url !dump', array('@url' => $url, '!dump' => "<pre>\n" . print_r($data, TRUE) . "</pre>\n"));
+      watchdog('spambot', "Request unsuccessful: @url <pre>\n@dump</pre>", array('@url' => $url, '@dump' => print_r($data, TRUE)));
     }
   }
   else {
-    watchdog('spambot', 'Error contacting service: @url !dump', array('@url' => $url, '!dump' => "<pre>\n" . print_r($result, TRUE) . "</pre>\n"));
+    watchdog('spambot', "Error contacting service: @url <pre>\n@dump</pre>", array('@url' => $url, '@dump' => print_r($result, TRUE)));
   }
 
   return FALSE;
@@ -405,7 +405,7 @@ function spambot_report_account($account, $ips) {
         $success = TRUE;
       }
       else {
-        watchdog('spambot', 'Error reporting account: @url !dump', array('@url' => $url, '!dump' => "<pre>\n" . print_r($result, TRUE) . "</pre>\n"));
+        watchdog('spambot', "Error reporting account: @url <pre>\n@dump</pre>", array('@url' => $url, '@dump' => print_r($result, TRUE)));
       }
     }
   }
