@@ -30,7 +30,7 @@ function spambot_menu() {
     'description' => 'Configure the spambot module',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spambot_settings_form'),
-    'access arguments' => array('access administration pages'),
+    'access arguments' => array('administer site configuration'),
     'file' => 'spambot.admin.inc',
   );
 
