@@ -41,3 +41,8 @@ function spambot_update_6301() {
   }
   return $ret;
 }
+
+function spambot_update_7101() {
+  variable_del('spambot_user_register_report');
+  return t('Deleted variable <em>spambot_user_register_report.</em>');
+}

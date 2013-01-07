@@ -101,18 +101,6 @@ function spambot_user_register_validate($form, &$form_state) {
         form_set_error('name', $message);
         form_set_error('mail', $message);
 
-        // Auto reporting if configured
-        $key = variable_get('spambot_sfs_api_key', FALSE);
-        if ($key && variable_get('spambot_user_register_report', FALSE)) {
-          // Make up a dummy account object.
-          $account = new StdClass();
-          $account->mail = $form_state['values']['mail'];
-          $account->name = $form_state['values']['name'];
-          $ip = ip_address();
-          spambot_report_account($account, array($ip));
-          watchdog('spambot', 'Reported as spammer: email=@email,username=@username,ip=@ip', array('@email' => $account->mail, '@username' => $account->name, '@ip' => $ip));
-        }
-
         // Slow them down if configured
         $delay = variable_get('spambot_blacklisted_delay', 0);
         if ($delay) {
@@ -121,39 +109,6 @@ function spambot_user_register_validate($form, &$form_state) {
       }
     }
   }
-}
-
-/**
- * Implementation of hook_user_operations()
- */
-function spambot_user_operations($form_state = array()) {
-  $operations = array(
-    'spambot_report' => array(
-      'label' => t('Block and report the selected users as spammers'),
-      'callback' => 'spambot_user_operations_report',
-    ),
-  );
-  return $operations;
-}
-
-function spambot_user_operations_report($accounts) {
-  $key = variable_get('spambot_sfs_api_key', FALSE);
-  if (!$key) {
-    drupal_set_message(t('If you wish to report spammers to Stop Forum Spam, you need to register for an API key at the <a href="http://www.stopforumspam.com">Stop Forum Spam</a> website.'));
-    return;
-  }
-  
-  foreach (user_load_multiple($accounts) as $account) {
-    $ips = spambot_account_ip_addresses($account);
-    if (count($ips)) {
-      spambot_report_account($account, $ips);
-    }
-    else {
-      drupal_set_message(t('Reporting %name as a spammer failed because there are no IP addresses stored for that user.', array('%name' => $account->name)));
-    }
-  }
-  // Blocking accounts seems to clear IP addresses from sessions table so do it after
-  user_user_operations_block($accounts);
 }
 
 /**

@@ -61,13 +61,6 @@ function spambot_settings_form($form, &$form_state) {
     '#default_value' => variable_get('spambot_blacklisted_delay', 0),
   );
 
-  $form['register']['spambot_user_register_report'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Report blocked user registrations as spammers'),
-    '#description' => t('If ticked, new user registrations which were blocked as spammers are also reported to www.stopforumspam.com as spammers. Requires an API key.'),
-    '#default_value' => variable_get('spambot_user_register_report', FALSE),
-  );
-
   $form['existing'] = array(
     '#type' => 'fieldset',
     '#title' => t('Scan existing accounts'),
