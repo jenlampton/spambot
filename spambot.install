@@ -46,3 +46,14 @@ function spambot_update_7101() {
   variable_del('spambot_user_register_report');
   return t('Deleted variable <em>spambot_user_register_report.</em>');
 }
+
+function spambot_update_7102() {
+  $message = variable_get('spambot_blocked_message', FALSE);
+  if ($message !== FALSE) {
+    variable_set('spambot_blocked_message_email', $message);
+    variable_set('spambot_blocked_message_username', $message);
+    variable_set('spambot_blocked_message_ip', $message);
+    variable_del('spambot_blocked_message');
+    return t('Transferred user registration blocked message to new format.');
+  }
+}

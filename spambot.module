@@ -9,6 +9,8 @@ define('SPAMBOT_ACTION_NONE', 0);
 define('SPAMBOT_ACTION_BLOCK', 1);
 define('SPAMBOT_ACTION_DELETE', 2);
 
+define('SPAMBOT_DEFAULT_BLOCKED_MESSAGE', 'Your email address or username or IP address is blacklisted.');
+
 /**
  * Implements hook_permission()
  */
@@ -84,22 +86,28 @@ function spambot_user_register_validate($form, &$form_state) {
   if (count($request)) {
     $data = array();
     if (spambot_sfs_request($request, $data)) {
+      $substitutions = array(
+        '@email' => $form_state['values']['mail'], '%email' => $form_state['values']['mail'],
+        '@username' => $form_state['values']['name'], '%username' => $form_state['values']['name'],
+        '@ip' => ip_address(), '%ip' => ip_address(),
+      );
+
       $reasons = array();
       if ($email_threshold > 0 && !empty($data['email']['appears']) && $data['email']['frequency'] >= $email_threshold) {
+        form_set_error('mail', t(variable_get('spambot_blocked_message_email', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
         $reasons[] = t('email=@value', array('@value' => $request['email']));
       }
       if ($username_threshold > 0 && !empty($data['username']['appears']) && $data['username']['frequency'] >= $username_threshold) {
+        form_set_error('name', t(variable_get('spambot_blocked_message_username', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
         $reasons[] = t('username=@value', array('@value' => $request['username']));
       }
       if ($ip_threshold > 0 && !empty($data['ip']['appears']) && $data['ip']['frequency'] >= $ip_threshold) {
+        form_set_error('', t(variable_get('spambot_blocked_message_ip', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
         $reasons[] = t('ip=@value', array('@value' => $request['ip']));
       }
 
       if (count($reasons)) {
         watchdog('spambot', 'Blocked registration: @reasons', array('@reasons' => join(',', $reasons)));
-        $message = variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.'));
-        form_set_error('name', $message);
-        form_set_error('mail', $message);
 
         // Slow them down if configured
         $delay = variable_get('spambot_blacklisted_delay', 0);

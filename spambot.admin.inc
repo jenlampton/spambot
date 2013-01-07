@@ -42,11 +42,26 @@ function spambot_settings_form($form, &$form_state) {
     '#description' => t('If ticked, new user registrations will be tested if they match any known spammers and blacklisted.'),
     '#default_value' => variable_get('spambot_user_register_protect', TRUE),
   ); 
-  $form['register']['spambot_blocked_message'] = array(
+  $form['register']['spambot_blocked_message_email'] = array(
     '#type' => 'textarea',
-    '#title' => t('User registration blocked message'),
-    '#default_value' => variable_get('spambot_blocked_message', t('Your email address or username is blacklisted.')),
-    '#description' => t('Message to display when user registration is blocked.'),
+    '#title' => t('User registration blocked message (blocked email address)'),
+    '#rows' => 1,
+    '#default_value' => variable_get('spambot_blocked_message_email', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)),
+    '#description' => t('Message to display when user registration is blocked due to email address. <br />Showing a specific reason why registration was blocked may make spambot easier to circumvent.<br />The following tokens are available: @email %email @username %username @ip %ip'),
+  );
+  $form['register']['spambot_blocked_message_username'] = array(
+    '#type' => 'textarea',
+    '#title' => t('User registration blocked message (blocked username)'),
+    '#rows' => 1,
+    '#default_value' => variable_get('spambot_blocked_message_username', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)),
+    '#description' => t('Message to display when user registration is blocked due to username.'),
+  );
+  $form['register']['spambot_blocked_message_ip'] = array(
+    '#type' => 'textarea',
+    '#title' => t('User registration blocked message (blocked ip address)'),
+    '#rows' => 1,
+    '#default_value' => variable_get('spambot_blocked_message_ip', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)),
+    '#description' => t('Message to display when user registration is blocked due to ip address.'),
   );
   
   $sleep_options = array(0 => t('Don\'t delay'), 1 => t('1 second'));
