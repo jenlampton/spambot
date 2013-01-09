@@ -120,6 +120,24 @@ function spambot_user_register_validate($form, &$form_state) {
 }
 
 /**
+ * Implementation of hook_node_insert
+ *
+ * Keeps table node_spambot up to date
+ */
+function spambot_node_insert($node) {
+  db_insert('node_spambot')->fields(array('nid' => $node->nid, 'uid' => $node->uid, 'hostname' => ip_address()))->execute();
+}
+
+/**
+ * Implementation of hook_node_delete
+ *
+ * Keeps table node_spambot up to date
+ */
+function spambot_node_delete($node) {
+  db_delete('node_spambot')->condition('nid', $node->nid)->execute();
+}
+
+/**
  * Implementation of hook_cron
  */
 function spambot_cron() {
@@ -306,6 +324,11 @@ function spambot_account_is_spammer($account) {
 function spambot_account_ip_addresses($account) {
   $hostnames = array();
 
+  // Retrieve IPs from node_spambot table
+  $items = db_select('node_spambot')->fields('node_spambot', array('hostname'))
+    ->condition('uid', $account->uid, '=')->distinct()->execute()->fetchCol();
+  $hostnames = array_merge($hostnames, $items);
+
   // Retrieve IPs from any sessions which may still exist
   $items = db_select('sessions')->fields('sessions', array('hostname'))
     ->condition('uid', $account->uid, '=')->distinct()->execute()->fetchCol();  
@@ -337,39 +360,41 @@ function spambot_account_ip_addresses($account) {
 }
 
 /**
- * Reports an account as a spammer
+ * Reports an account as a spammer. Requires ip address and evidence of a single incident
  *
  * @param $account
  *   Account to report
- * @param $ips
- *   An array of IP addresses to report.
- *   If there are no IPs, the report will fail. 
+ * @param $ip
+ *   IP address to report
+ * @param $evidence
+ *   Evidence to report
  *
  * @return
  *   TRUE if successful, FALSE if error
  */
-function spambot_report_account($account, $ips) {
+function spambot_report_account($account, $ip, $evidence) {
   $success = FALSE;
   $key = variable_get('spambot_sfs_api_key', FALSE);
 
-  if ($key && count($ips)) {
+  if ($key) {
+    $query['api_key'] = $key;
     $query['email'] = $account->mail;
     $query['username'] = $account->name;
-    $query['api_key'] = $key;
+    $query['ip_addr'] = $ip;
+    $query['evidence'] = $evidence;
 
-    // Make one report for each IP
-    foreach ($ips as $ip) {
-      $query['ip_addr'] = $ip;
-      
-      $url = 'http://www.stopforumspam.com/add.php?' . http_build_query($query, '', '&');
-      $result = drupal_http_request($url);
-      if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
-        // If one report is successful, then all are successful
-        $success = TRUE;
-      }
-      else {
-        watchdog('spambot', "Error reporting account: @url <pre>\n@dump</pre>", array('@url' => $url, '@dump' => print_r($result, TRUE)));
-      }
+    $url = 'http://www.stopforumspam.com/add.php?' . http_build_query($query, '', '&');
+    $result = drupal_http_request($url);
+    if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
+      $success = TRUE;
+    }
+    else if (stripos($result->data, 'duplicate') !== FALSE) {
+      // www.stopforumspam.com can return a 503 code with data = '<p>recent duplicate entry</p>'
+      //   which we will treat as successful.
+      $success = TRUE;
+    }
+    else {
+      watchdog('spambot', "Error reporting account: @url <pre>\n@dump</pre>", array('@url' => $url, '@dump' => print_r($result, TRUE)));
     }
   }
 
