@@ -65,6 +65,7 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
   if (module_exists('comment')) {
     $form['action']['report']['cids'] = array();
     $result = db_select('comment')->fields('comment', array('cid'))->condition('uid', $account->uid)->orderBy('cid', 'DESC')->range(0, 20)->execute();
+    $cids = array();
     foreach ($result as $record) {
       $cids[$record->cid] = $record->cid;
     }
