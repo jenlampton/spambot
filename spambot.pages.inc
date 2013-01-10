@@ -123,11 +123,11 @@ function spambot_user_spam_admin_form_submit($form, &$form_state) {
     $data = array();
     if (spambot_sfs_request($request, $data)) {
       if (!empty($data['email']['appears'])) {
-        $messages[] = t('This account\'s email address matches @num times: @email', array('@email' => $request['email'], '@num' => $data['email']['frequency']));
+        $messages[] = t('This account\'s email address matches @num times: !link', array('!link' => l($request['email'], 'http://www.stopforumspam.com/search?q=' . $request['email']), '@num' => $data['email']['frequency']));
       }
 
       if (!empty($data['username']['appears'])) {
-        $messages[] = t('This account\'s username matches @num times: @username', array('@username' => $request['username'], '@num' => $data['username']['frequency']));
+        $messages[] = t('This account\'s username matches @num times: !link', array('!link' => l($request['username'], 'http://www.stopforumspam.com/search?q=' . $request['username']), '@num' => $data['username']['frequency']));
       }
     }
     else {
@@ -148,7 +148,7 @@ function spambot_user_spam_admin_form_submit($form, &$form_state) {
         $data = array();
         if (spambot_sfs_request($request, $data)) {
           if (!empty($data['ip']['appears'])) {
-            $messages[] = t('An IP address @ip used by this account matches @num times.', array('@ip' => $ip, '@num' => $data['ip']['frequency']));
+            $messages[] = t('An IP address !ip used by this account matches @num times.', array('!ip' => l($ip, 'http://www.stopforumspam.com/search?q=' . $ip), '@num' => $data['ip']['frequency']));
           }
         }
         else {
