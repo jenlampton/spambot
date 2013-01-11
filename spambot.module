@@ -150,42 +150,50 @@ function spambot_cron() {
     }
 
     $uids = db_select('users')->fields('users', array('uid'))
-      ->condition('status', 0, '<>')->condition('uid', $last_uid, '>')->orderBy('uid')
+      ->condition('uid', $last_uid, '>')->orderBy('uid')
       ->range(0, $limit)->execute()->fetchCol();
 
     $action = variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE);
     foreach ($uids as $uid) {
       $account = user_load($uid);
       
-      $result = spambot_account_is_spammer($account);
-      if ($result > 0) {
-        $link = l(t('spammer'), 'user/' . $account->uid);
-        switch (user_access('protected from spambot scans', $account) ? SPAMBOT_ACTION_NONE : $action) {
-          case SPAMBOT_ACTION_BLOCK:
-            user_save($account, array('status' => 0));
-            watchdog('spambot', 'Blocked spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
-            break;
+      if ($account->status || variable_get('spambot_check_blocked_accounts', FALSE)) {
+        $result = spambot_account_is_spammer($account);
+        if ($result > 0) {
+          $link = l(t('spammer'), 'user/' . $account->uid);
+          switch (user_access('protected from spambot scans', $account) ? SPAMBOT_ACTION_NONE : $action) {
+            case SPAMBOT_ACTION_BLOCK:
+              if ($account->status) {
+                user_save($account, array('status' => 0));
+                watchdog('spambot', 'Blocked spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
+              }
+              else {
+                // Don't block an already blocked account
+                watchdog('spambot', t('Spam account already blocked: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid)), array(), WATCHDOG_NOTICE, $link);
+              }
+              break;
 
-          case SPAMBOT_ACTION_DELETE:
-            user_delete($account->uid);
-            watchdog('spambot', 'Deleted spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
-            break;
+            case SPAMBOT_ACTION_DELETE:
+              user_delete($account->uid);
+              watchdog('spambot', 'Deleted spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
+              break;
 
-          default:
-            watchdog('spambot', 'Found spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
-            break;
+            default:
+              watchdog('spambot', 'Found spam account: @name &lt;@email&gt; (uid @uid)', array('@name' => $account->name, '@email' => $account->mail, '@uid' => $account->uid), WATCHDOG_NOTICE, $link);
+              break;
+          }
+          // Mark this uid as successfully checked
+          variable_set('spambot_last_checked_uid', $uid);
         }
-        // Mark this uid as successfully checked
-        variable_set('spambot_last_checked_uid', $uid);
+        else if ($result == 0) {
+          // Mark this uid as successfully checked
+          variable_set('spambot_last_checked_uid', $uid);
+        }
+        else if ($result < 0) {
+          // Error contacting service, so pause processing
+          break;
+        }
       }
-      else if ($result == 0) {
-        // Mark this uid as successfully checked
-        variable_set('spambot_last_checked_uid', $uid);
-      }
-      else if ($result < 0) {
-        // Error contacting service, so pause processing
-        break;
-      }    
     }
   }
 }

@@ -106,7 +106,7 @@ function spambot_user_spam_admin_form_validate($form, &$form_state) {
   }
 
   if ($key_required && (!variable_get('spambot_sfs_api_key', FALSE))) {
-    form_set_error('', t('To report spammers to www.stopforumspam.com, you need to register for an API key at <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> and enter it into the !page.', array('!page' => l('spambot settings', 'admin/settings/spambot'))));
+    form_set_error('', t('To report spammers to www.stopforumspam.com, you need to register for an API key at <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> and enter it into the !page.', array('!page' => l('spambot settings', 'admin/config/system/spambot'))));
   }
 }
 

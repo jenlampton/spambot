@@ -79,15 +79,21 @@ function spambot_settings_form($form, &$form_state) {
   $form['existing'] = array(
     '#type' => 'fieldset',
     '#title' => t('Scan existing accounts'),
-    '#description' => t('This module can also check existing user accounts to see if they are known spammers. It works by checking user accounts with increasing uid\'s ie. user id 2, 3, 4 etc during cron. Any existing users found to be known spammers are logged. Blocked user accounts are not checked.'),
+    '#description' => t('This module can also scan existing user accounts to see if they are known spammers. It works by checking user accounts with increasing uid\'s ie. user id 2, 3, 4 etc during cron.'),
     '#collapsible' => TRUE,
   );
   $form['existing']['spambot_cron_user_limit'] = array(
     '#type' => 'textfield',
-    '#title' => t('Maximum number of user accounts to check per cron'),
-    '#description' => t('Enter the number of user accounts to check for each cron. If you do not want to check existing user accounts, leave this as 0.<br />Be careful not to make this value too large, as it will slow your cron execution down and may cause your site to query www.stopforumspam.com more times than allowed each day.'),
+    '#title' => t('Maximum number of user accounts to scan per cron'),
+    '#description' => t('Enter the number of user accounts to scan for each cron. If you do not want to scan existing user accounts, leave this as 0.<br />Be careful not to make this value too large, as it will slow your cron execution down and may cause your site to query www.stopforumspam.com more times than allowed each day.'),
     '#size' => 10,
     '#default_value' => variable_get('spambot_cron_user_limit', 0),
+  );
+  $form['existing']['spambot_check_blocked_accounts'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Scan blocked accounts'),
+    '#description' => t('Tick this to scan blocked accounts. Otherwise blocked accounts are not scanned.'),
+    '#default_value' => variable_get('spambot_check_blocked_accounts', FALSE),
   );
   $form['existing']['spambot_spam_account_action'] = array(
     '#type' => 'select',
