@@ -410,3 +410,23 @@ function spambot_report_account($account, $ip, $evidence) {
 
   return $success;
 }
+
+/**
+ * Implement hook_form_FORM_ID_alter
+ * Adds an Operations link to the user administration form with a link to user/$uid/spambot
+ */
+function spambot_form_user_admin_account_alter(&$form, &$form_state, $form_id){  
+  foreach ($form['accounts']['#options'] as $uid => $user_options) {
+    // Change $form['accounts']['#options'][$uid]['operations']['data'] into a multi-item render array so we can append to it
+    $form['accounts']['#options'][$uid]['operations']['data'] = array(    
+      'edit' => $form['accounts']['#options'][$uid]['operations']['data']
+    );
+    $form['accounts']['#options'][$uid]['operations']['data']['spam'] = array(
+      '#type' => 'link', 
+      '#title' => t('spam'), 
+      '#href' => "user/$uid/spambot",
+      // Ugly hack to insert a space
+      '#prefix' => ' ',
+    );
+  }
+}
