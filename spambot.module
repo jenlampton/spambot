@@ -11,6 +11,8 @@ define('SPAMBOT_ACTION_DELETE', 2);
 
 define('SPAMBOT_DEFAULT_BLOCKED_MESSAGE', 'Your email address or username or IP address is blacklisted.');
 
+define('SPAMBOT_MAX_EVIDENCE_LENGTH', 1024);
+
 /**
  * Implements hook_permission()
  */
@@ -389,7 +391,7 @@ function spambot_report_account($account, $ip, $evidence) {
     $query['email'] = $account->mail;
     $query['username'] = $account->name;
     $query['ip_addr'] = $ip;
-    $query['evidence'] = $evidence;
+    $query['evidence'] = mb_strimwidth($evidence, 0, SPAMBOT_MAX_EVIDENCE_LENGTH);
 
     $url = 'http://www.stopforumspam.com/add.php?' . http_build_query($query, '', '&');
     $result = drupal_http_request($url);
