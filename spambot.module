@@ -393,8 +393,13 @@ function spambot_report_account($account, $ip, $evidence) {
     $query['ip_addr'] = $ip;
     $query['evidence'] = mb_strimwidth($evidence, 0, SPAMBOT_MAX_EVIDENCE_LENGTH);
 
-    $url = 'http://www.stopforumspam.com/add.php?' . http_build_query($query, '', '&');
-    $result = drupal_http_request($url);
+    $url = 'http://www.stopforumspam.com/add.php';
+    $options = array(
+      'headers' => array('Content-type' => 'application/x-www-form-urlencoded'),
+      'method' => 'POST',
+      'data' => http_build_query($query, '', '&'),
+    );
+    $result = drupal_http_request($url, $options);
     if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
       $success = TRUE;
     }
