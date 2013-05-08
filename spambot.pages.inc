@@ -1,6 +1,8 @@
 <?php
 
 function spambot_user_spam_admin_form($form, &$form_state, $account) {
+  $key = variable_get('spambot_sfs_api_key', FALSE);
+
   $node_count = db_select('node')->condition('uid', $account->uid, '=')
     ->countQuery()->execute()->fetchField();
   
@@ -40,7 +42,6 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
     '#title' => t('Report this account to www.stopforumspam.com'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-    '#description' => t('An API key from <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> is required to report spammers.<br />Select one or more posts below to report them to www.stopforumspam.com.'),
   );
 
   // Fetch a list of reportable nodes
@@ -57,6 +58,7 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
       $form['action']['report']['nids'][$nid] = array(
         '#type' => 'checkbox',
         '#title' => l(mb_strimwidth($node->title, 0, 128, '...'), 'node/' . $nid, array('attributes' => array('title' => mb_strimwidth($node->body['und'][0]['summary'] . "\n\n" . $node->body['und'][0]['value'], 0, 256, '...')))) . ' ' . t('(node, ip=@ip)', array('@ip' => $hostname)),
+        '#disabled' => empty($key),
       );
     }
   }
@@ -76,9 +78,18 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
         $form['action']['report']['cids'][$cid] = array(
           '#type' => 'checkbox',
           '#title' => l(mb_strimwidth($comment->subject, 0, 128, '...'), 'node/' . $comment->nid, array('fragment' => 'comment-'. $comment->cid, 'attributes' => array('title' => mb_strimwidth($comment->comment_body['und'][0]['value'], 0, 256, '...')))) . ' ' . t('(comment, ip=@ip)', array('@ip' => $comment->hostname)),
+          '#disabled' => empty($key),
         );
       }
     }
+  }
+
+  if ($key) {
+    $evidence_count = count($form['action']['report']['nids']) + count($form['action']['report']['cids']);
+    $form['action']['report']['#description'] = $evidence_count ? t('Select one or more posts below to report them to www.stopforumspam.com.') : t('This account cannot be reported because no evidence or IP address is available.');
+  }
+  else {
+    $form['action']['report']['#description'] = t('An API key from <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> must <a href="!admin-url">be configured</a> to report spammers.', array('!admin-url' => url('admin/config/system/spambot')));
   }
 
   $form['action']['block_user'] = array(
