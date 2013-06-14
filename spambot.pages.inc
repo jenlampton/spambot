@@ -55,9 +55,10 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
   foreach ($nid_hostnames as $nid => $hostname) {
     $node = node_load($nid);
     if (!empty($node->nid)) {
+      $preview = !empty($node->body) ? mb_strimwidth($node->body['und'][0]['summary'] . "\n\n" . $node->body['und'][0]['value'], 0, 256, '...') : '';
       $form['action']['report']['nids'][$nid] = array(
         '#type' => 'checkbox',
-        '#title' => l(mb_strimwidth($node->title, 0, 128, '...'), 'node/' . $nid, array('attributes' => array('title' => mb_strimwidth($node->body['und'][0]['summary'] . "\n\n" . $node->body['und'][0]['value'], 0, 256, '...')))) . ' ' . t('(node, ip=@ip)', array('@ip' => $hostname)),
+        '#title' => l(mb_strimwidth($node->title, 0, 128, '...'), 'node/' . $nid, array('attributes' => array('title' => $preview))) . ' ' . t('(node, ip=@ip)', array('@ip' => $hostname)),
         '#disabled' => empty($key),
       );
     }
