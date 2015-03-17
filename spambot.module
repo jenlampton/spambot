@@ -191,10 +191,11 @@ function spambot_cron() {
 }
 
 /**
- * Validate the user_register form.
+ * Validate callback for user_register form.
  */
 function spambot_user_register_form_validate($form, &$form_state) {
   $values = $form_state['values'];
+  $form_errors = form_get_errors();
 
   $email_threshold = variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL);
   $username_threshold = variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME);
@@ -216,7 +217,7 @@ function spambot_user_register_form_validate($form, &$form_state) {
   }
 
   // Only do a remote API request if there is anything to check.
-  if ($request) {
+  if ($request && !$form_errors) {
     $data = array();
     if (spambot_sfs_request($request, $data)) {
       $substitutions = array(
