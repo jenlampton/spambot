@@ -244,7 +244,9 @@ function spambot_user_register_form_validate($form, &$form_state) {
       }
 
       if ($reasons) {
-        watchdog('spambot', 'Blocked registration: @reasons', array('@reasons' => implode(',', $reasons)));
+        if (variable_get('spambot_log_blocked_registration', TRUE)) {
+          watchdog('spambot', 'Blocked registration: @reasons', array('@reasons' => implode(',', $reasons)));
+        }
 
         // Slow them down if configured.
         if ($delay = variable_get('spambot_blacklisted_delay', SPAMBOT_DEFAULT_DELAY)) {

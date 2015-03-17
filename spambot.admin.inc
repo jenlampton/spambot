@@ -148,6 +148,17 @@ function spambot_settings_form($form, &$form_state) {
     '#default_value' => $last_uid,
   );
 
+  $form['logging'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Log information'),
+    '#collapsible' => TRUE,
+  );
+  $form['logging']['spambot_log_blocked_registration'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log information about blocked registrations into Drupal log'),
+    '#default_value' => variable_get('spambot_log_blocked_registration', TRUE),
+  );
+
   $form['spambot_sfs_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('www.stopforumspam.com API key'),
