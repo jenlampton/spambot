@@ -17,18 +17,6 @@ define('SPAMBOT_DEFAULT_BLOCKED_MESSAGE', 'Your email address or username or IP 
 define('SPAMBOT_MAX_EVIDENCE_LENGTH', 1024);
 
 /**
- * Implements hook_permission().
- */
-function spambot_permission() {
-  return array(
-    'protected from spambot scans' => array(
-      'title' => t('Protected from spambot scans'),
-      'description' => t('Roles with this access permission would not be checked for spammer'),
-    ),
-  );
-}
-
-/**
  * Implements hook_menu().
  */
 function spambot_menu() {
@@ -43,14 +31,26 @@ function spambot_menu() {
 
   $items['user/%user/spambot'] = array(
     'title' => 'Spam',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('spambot_user_spam_admin_form', 1),
+    'page callback' => 'spambot_user_spam',
+    'page arguments' => array(1),
     'access arguments' => array('administer users'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'spambot.pages.inc',
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function spambot_permission() {
+  return array(
+    'protected from spambot scans' => array(
+      'title' => t('Protected from spambot scans'),
+      'description' => t('Roles with this access permission would not be checked for spammer'),
+    ),
+  );
 }
 
 /**
@@ -231,15 +231,15 @@ function spambot_user_register_form_validate($form, &$form_state) {
 
       $reasons = array();
       if ($email_threshold > 0 && !empty($data['email']['appears']) && $data['email']['frequency'] >= $email_threshold) {
-        form_set_error('mail', t(variable_get('spambot_blocked_message_email', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
+        form_set_error('mail', t(variable_get('spambot_blocked_message_email', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
         $reasons[] = t('email=@value', array('@value' => $request['email']));
       }
       if ($username_threshold > 0 && !empty($data['username']['appears']) && $data['username']['frequency'] >= $username_threshold) {
-        form_set_error('name', t(variable_get('spambot_blocked_message_username', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
+        form_set_error('name', t(variable_get('spambot_blocked_message_username', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
         $reasons[] = t('username=@value', array('@value' => $request['username']));
       }
       if ($ip_threshold > 0 && !empty($data['ip']['appears']) && $data['ip']['frequency'] >= $ip_threshold) {
-        form_set_error('', t(variable_get('spambot_blocked_message_ip', t(SPAMBOT_DEFAULT_BLOCKED_MESSAGE)), $substitutions));
+        form_set_error('', t(variable_get('spambot_blocked_message_ip', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
         $reasons[] = t('ip=@value', array('@value' => $request['ip']));
       }
 

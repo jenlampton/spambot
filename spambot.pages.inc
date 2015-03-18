@@ -1,12 +1,19 @@
 <?php
 
-function spambot_user_spam_admin_form($form, &$form_state, $account) {
+/**
+ * Page callback for 'user/%user/spambot' path.
+ */
+function spambot_user_spam($account) {
   // Check if current user isn't anonymous user.
   if (!$account->uid) {
     drupal_set_message('The Anonymous user account can\'t be reported for spam. If you intended to block a user account verify that the URL is /user/XXXX/spambot where XXXX is a valid UID', 'warning');
-    drupal_not_found();
-    drupal_exit();
+    return MENU_NOT_FOUND;
   }
+
+  return drupal_get_form('spambot_user_spam_admin_form', $account);
+}
+
+function spambot_user_spam_admin_form($form, &$form_state, $account) {
   $key = variable_get('spambot_sfs_api_key', FALSE);
 
   $node_count = db_select('node')->condition('uid', $account->uid, '=')
