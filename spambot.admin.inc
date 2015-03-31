@@ -42,21 +42,47 @@ function spambot_settings_form() {
     '#title' => t('Number of times the email has been reported is equal to or more than'),
     '#description' => t('If the email address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer.'),
     '#options' => array(0 => t('Don\'t use email as a criteria')) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_email', 1),
+    '#default_value' => variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL),
   );
   $form['criteria']['spambot_criteria_username'] = array(
     '#type' => 'select',
     '#title' => t('Number of times the username has been reported is equal to or more than'),
     '#description' => t('If the username for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about using this option as you may accidentally block genuine users who happen to choose the same username as a known spammer.'),
     '#options' => array(0 => t('Don\'t use username as a criteria')) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_username', 0),
+    '#default_value' => variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME),
   );
   $form['criteria']['spambot_criteria_ip'] = array(
     '#type' => 'select',
     '#title' => t('Number of times the IP address has been reported is equal to or more than'),
     '#description' => t('If the IP address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about setting this threshold too low as IP addresses can change.'),
     '#options' => array(0 => t('Don\'t use IP address as a criteria')) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_ip', 20),
+    '#default_value' => variable_get('spambot_criteria_ip', SPAMBOT_DEFAULT_CRITERIA_IP),
+  );
+
+  // Whitelists.
+  $form['spambot_whitelist'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Whitelists'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['spambot_whitelist']['spambot_whitelist_email'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Allowed email addresses'),
+    '#description' => t('Enter email addresses, one per line.'),
+    '#default_value' => variable_get('spambot_whitelist_email', ''),
+  );
+  $form['spambot_whitelist']['spambot_whitelist_username'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Allowed usernames'),
+    '#description' => t('Enter usernames, one per line.'),
+    '#default_value' => variable_get('spambot_whitelist_username', ''),
+  );
+  $form['spambot_whitelist']['spambot_whitelist_ip'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Allowed IP addresses'),
+    '#description' => t('Enter IP addresses, one per line.'),
+    '#default_value' => variable_get('spambot_whitelist_ip', ''),
   );
 
   // Fieldset for configure protecting at user register form.
@@ -82,7 +108,7 @@ function spambot_settings_form() {
     '#title' => t('If blacklisted, delay for'),
     '#description' => t('If an attempted user registration is blacklisted, you can choose to deliberately delay the request. This can be useful for slowing them down if they continually try to register.<br />Be careful about choosing too large a value for this as it may exceed your PHP max_execution_time.'),
     '#options' => $sleep_options,
-    '#default_value' => variable_get('spambot_blacklisted_delay', 0),
+    '#default_value' => variable_get('spambot_blacklisted_delay', SPAMBOT_DEFAULT_DELAY),
   );
 
   // Fieldset for set up scanning of existing accounts.
@@ -98,7 +124,7 @@ function spambot_settings_form() {
     '#title' => t('Maximum number of user accounts to scan per cron'),
     '#description' => t('Enter the number of user accounts to scan for each cron. If you do not want to scan existing user accounts, leave this as 0.<br />Be careful not to make this value too large, as it will slow your cron execution down and may cause your site to query www.stopforumspam.com more times than allowed each day.'),
     '#size' => 10,
-    '#default_value' => variable_get('spambot_cron_user_limit', 0),
+    '#default_value' => variable_get('spambot_cron_user_limit', SPAMBOT_DEFAULT_CRON_USER_LIMIT),
   );
   $form['existing']['spambot_check_blocked_accounts'] = array(
     '#type' => 'checkbox',

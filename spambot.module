@@ -204,7 +204,7 @@ function spambot_cron() {
 /**
  * Validate callback for user_register form.
  */
-function spambot_user_register_form_validate($form, &$form_state) {
+function spambot_user_register_form_validate(&$form, &$form_state) {
   $values = $form_state['values'];
   $form_errors = form_get_errors();
 
@@ -214,16 +214,16 @@ function spambot_user_register_form_validate($form, &$form_state) {
 
   // Build request parameters according to the criteria to use.
   $request = array();
-  if (!empty($values['mail']) && $email_threshold > 0) {
+  if (!empty($values['mail']) && $email_threshold > 0 && !spambot_check_whitelist('email', $values['mail'])) {
     $request['email'] = $values['mail'];
   }
 
-  if (!empty($values['name']) && $username_threshold > 0) {
+  if (!empty($values['name']) && $username_threshold > 0 && !spambot_check_whitelist('username', $values['name'])) {
     $request['username'] = $values['name'];
   }
 
   $ip = ip_address();
-  if ($ip_threshold > 0 && $ip != '127.0.0.1') {
+  if ($ip_threshold > 0 && $ip != '127.0.0.1' && !spambot_check_whitelist('ip', $ip)) {
     $request['ip'] = $ip;
   }
 
@@ -347,11 +347,11 @@ function spambot_account_is_spammer($account) {
 
   // Build request parameters according to the criteria to use
   $request = array();
-  if (!empty($account->mail) && $email_threshold > 0) {
+  if (!empty($account->mail) && $email_threshold > 0 && !spambot_check_whitelist('email', $account->mail)) {
     $request['email'] = $account->mail;
   }
 
-  if (!empty($account->name) && $username_threshold > 0) {
+  if (!empty($account->name) && $username_threshold > 0 && !spambot_check_whitelist('username', $account->name)) {
     $request['username'] = $account->name;
   }
 
@@ -502,7 +502,7 @@ function spambot_report_account($account, $ip, $evidence) {
     }
     elseif (stripos($result->data, 'duplicate') !== FALSE) {
       // www.stopforumspam.com can return a 503 code with data = '<p>recent duplicate entry</p>'
-      //   which we will treat as successful.
+      // which we will treat as successful.
       $success = TRUE;
     }
     else {
@@ -511,4 +511,40 @@ function spambot_report_account($account, $ip, $evidence) {
   }
 
   return $success;
+}
+
+/**
+ * Check if current data $type is whitelisted.
+ *
+ * @param string $type
+ *  Type can be one of these three values:
+ *  'ip', 'email' or 'username'.
+ * @param string $value
+ *  Value to be checked.
+ *
+ * @return bool
+ */
+function spambot_check_whitelist($type, $value) {
+  switch ($type) {
+    case 'ip':
+      $whitelist_ips = variable_get('spambot_whitelist_ip', '');
+      $result = strpos($whitelist_ips, $value) !== FALSE;
+      break;
+
+    case 'email':
+      $whitelist_usernames = variable_get('spambot_whitelist_email', '');
+      $result = strpos($whitelist_usernames, $value) !== FALSE;
+      break;
+
+    case 'username':
+      $whitelist_emails = variable_get('spambot_whitelist_username', '');
+      $result = strpos($whitelist_emails, $value) !== FALSE;
+      break;
+
+    default:
+      $result = FALSE;
+      break;
+  }
+
+  return $result;
 }

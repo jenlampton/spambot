@@ -218,11 +218,31 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
 
   if (spambot_sfs_request($request, $data)) {
     if (!empty($data['email']['appears'])) {
-      $messages[] = t('This account\'s email address matches @num times: !link', array('!link' => l($request['email'], 'http://www.stopforumspam.com/search?q=' . $request['email']), '@num' => $data['email']['frequency']));
+      $messages[] = array(
+        'text' => t('This account\'s email address matches @num times: !link', array('!link' => l($request['email'], 'http://www.stopforumspam.com/search?q=' . $request['email']), '@num' => $data['email']['frequency'])),
+        'type' => 'warning',
+      );
     }
 
     if (!empty($data['username']['appears'])) {
-      $messages[] = t('This account\'s username matches @num times: !link', array('!link' => l($request['username'], 'http://www.stopforumspam.com/search?q=' . $request['username']), '@num' => $data['username']['frequency']));
+      $messages[] = array(
+        'text' => t('This account\'s username matches @num times: !link', array('!link' => l($request['username'], 'http://www.stopforumspam.com/search?q=' . $request['username']), '@num' => $data['username']['frequency'])),
+        'type' => 'warning',
+      );
+    }
+
+    // Check data at whitelist.
+    if (spambot_check_whitelist('email', $account->mail)) {
+      $messages[] = array(
+        'text' => t('This account\'s email address placed at your whitelist.'),
+        'type' => 'status',
+      );
+    }
+    if (spambot_check_whitelist('username', $account->name)) {
+      $messages[] = array(
+        'text' => t('This account\'s username placed at your whitelist.'),
+        'type' => 'status',
+      );
     }
   }
   else {
@@ -238,12 +258,19 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
       if ($ip == '127.0.0.1') {
         continue;
       }
+      elseif (spambot_check_whitelist('ip', $ip)) {
+        $whitelist_ips[] = $ip;
+        continue;
+      }
 
       $request = array('ip' => $ip);
       $data = array();
       if (spambot_sfs_request($request, $data)) {
         if (!empty($data['ip']['appears'])) {
-          $messages[] = t('An IP address !ip used by this account matches @num times.', array('!ip' => l($ip, 'http://www.stopforumspam.com/search?q=' . $ip), '@num' => $data['ip']['frequency']));
+          $messages[] = array(
+            'text' => t('An IP address !ip used by this account matches @num times.', array('!ip' => l($ip, 'http://www.stopforumspam.com/search?q=' . $ip), '@num' => $data['ip']['frequency'])),
+            'type' => 'warning',
+          );
         }
       }
       else {
@@ -251,11 +278,18 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
         break;
       }
     }
+
+    if (!empty($whitelist_ips)) {
+      $messages[] = array(
+        'text' => t('These IP addresses placed at your whitelist: %ips', array('%ips' => implode(', ', $whitelist_ips))),
+        'type' => 'status',
+      );
+    }
   }
 
   if ($messages) {
     foreach ($messages as $message) {
-      drupal_set_message($message);
+      drupal_set_message($message['text'], $message['type']);
     }
   }
   else {
