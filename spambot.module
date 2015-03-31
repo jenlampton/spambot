@@ -487,7 +487,7 @@ function spambot_report_account($account, $ip, $evidence) {
     $query['email'] = $account->mail;
     $query['username'] = $account->name;
     $query['ip_addr'] = $ip;
-    $query['evidence'] = mb_strimwidth($evidence, 0, SPAMBOT_MAX_EVIDENCE_LENGTH);
+    $query['evidence'] = truncate_utf8($evidence, SPAMBOT_MAX_EVIDENCE_LENGTH);
 
     $url = 'http://www.stopforumspam.com/add.php';
     $options = array(
@@ -496,10 +496,11 @@ function spambot_report_account($account, $ip, $evidence) {
       'data' => http_build_query($query, '', '&'),
     );
     $result = drupal_http_request($url, $options);
+
     if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
       $success = TRUE;
     }
-    else if (stripos($result->data, 'duplicate') !== FALSE) {
+    elseif (stripos($result->data, 'duplicate') !== FALSE) {
       // www.stopforumspam.com can return a 503 code with data = '<p>recent duplicate entry</p>'
       //   which we will treat as successful.
       $success = TRUE;
