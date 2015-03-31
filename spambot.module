@@ -257,6 +257,12 @@ function spambot_user_register_form_validate($form, &$form_state) {
       if ($reasons) {
         if (variable_get('spambot_log_blocked_registration', TRUE)) {
           watchdog('spambot', 'Blocked registration: @reasons', array('@reasons' => implode(',', $reasons)));
+
+          $hook_args = array(
+            'request' => $request,
+            'reasons' => $reasons,
+          );
+          module_invoke_all('spambot_registration_blocked', $hook_args);
         }
 
         // Slow them down if configured.
