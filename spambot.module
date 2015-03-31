@@ -54,6 +54,17 @@ function spambot_permission() {
 }
 
 /**
+ * Implements hook_admin_paths().
+ */
+function spambot_admin_paths() {
+  $paths = array(
+    'user/*/spambot' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
 function spambot_form_user_register_form_alter(&$form, &$form_state) {
