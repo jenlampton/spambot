@@ -68,8 +68,15 @@ function spambot_admin_paths() {
  * Implements hook_form_FORM_ID_alter().
  */
 function spambot_form_user_register_form_alter(&$form, &$form_state) {
-  if (variable_get('spambot_user_register_protect', TRUE) && !user_access('protected from spambot scans')) {
-    $form['#validate'][] = 'spambot_user_register_form_validate';
+  if (variable_get('spambot_user_register_protect', TRUE)) {
+    spambot_add_form_protection(
+      $form,
+      array(
+        'mail' => 'mail',
+        'name' => 'name',
+        'ip' => TRUE,
+      )
+    );
   }
 }
 
@@ -205,6 +212,7 @@ function spambot_cron() {
  * Validate callback for user_register form.
  */
 function spambot_user_register_form_validate(&$form, &$form_state) {
+  $validation_field_names = $form['#spambot_validation'];
   $values = $form_state['values'];
   $form_errors = form_get_errors();
 
@@ -214,16 +222,16 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
 
   // Build request parameters according to the criteria to use.
   $request = array();
-  if (!empty($values['mail']) && $email_threshold > 0 && !spambot_check_whitelist('email', $values['mail'])) {
-    $request['email'] = $values['mail'];
+  if (!empty($values[$validation_field_names['mail']]) && $email_threshold > 0 && !spambot_check_whitelist('email', $values[$validation_field_names['mail']])) {
+    $request['email'] = $values[$validation_field_names['mail']];
   }
 
-  if (!empty($values['name']) && $username_threshold > 0 && !spambot_check_whitelist('username', $values['name'])) {
-    $request['username'] = $values['name'];
+  if (!empty($values[$validation_field_names['name']]) && $username_threshold > 0 && !spambot_check_whitelist('username', $values[$validation_field_names['name']])) {
+    $request['username'] = $values[$validation_field_names['name']];
   }
 
   $ip = ip_address();
-  if ($ip_threshold > 0 && $ip != '127.0.0.1' && !spambot_check_whitelist('ip', $ip)) {
+  if ($ip_threshold > 0 && $ip != '127.0.0.1' && $validation_field_names['ip'] && !spambot_check_whitelist('ip', $ip)) {
     $request['ip'] = $ip;
   }
 
@@ -232,10 +240,10 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
     $data = array();
     if (spambot_sfs_request($request, $data)) {
       $substitutions = array(
-        '@email' => $values['mail'],
-        '%email' => $values['mail'],
-        '@username' => $values['name'],
-        '%username' => $values['name'],
+        '@email' => $values[$validation_field_names['mail']],
+        '%email' => $values[$validation_field_names['mail']],
+        '@username' => $values[$validation_field_names['name']],
+        '%username' => $values[$validation_field_names['name']],
         '@ip' => $ip,
         '%ip' => $ip,
       );
@@ -547,4 +555,29 @@ function spambot_check_whitelist($type, $value) {
   }
 
   return $result;
+}
+
+/**
+ * Form builder function to add spambot validations.
+ *
+ * @param array $form
+ *  Form array on which will be added spambot validation.
+ * @param array $options
+ *  Array of options to be added to form.
+ *
+ * @return array
+ */
+function spambot_add_form_protection(&$form, $options = array()) {
+  // Don't add any protections if the user can bypass the Spambot.
+  if (user_access('protected from spambot scans')) {
+    return;
+  }
+
+  // Allow other modules to alter the protections applied to this form.
+  drupal_alter('spambot_form_protections', $options, $form);
+
+  $form['#spambot_validation']['name'] = !empty($options['name']) ? $options['name'] : '';
+  $form['#spambot_validation']['mail'] = !empty($options['mail']) ? $options['mail'] : '';
+  $form['#spambot_validation']['ip'] = isset($options['ip']) && is_bool($options['ip']) ? $options['ip'] : TRUE;
+  $form['#validate'][] = 'spambot_user_register_form_validate';
 }
