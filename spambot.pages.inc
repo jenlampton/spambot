@@ -142,7 +142,8 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
   }
 
   if ($key) {
-    $evidence_count = count($form['action']['report']['nids']) + count($form['action']['report']['cids']);
+    $comment_cids = $comments_enabled ? count($form['action']['report']['cids']) : 0;
+    $evidence_count = count($form['action']['report']['nids']) + $comment_cids;
     $form['action']['report']['#description'] = $evidence_count ? t('Select one or more posts below to report them to www.stopforumspam.com.') : t('This account cannot be reported because no evidence or IP address is available.');
   }
   else {
