@@ -263,6 +263,14 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
         $whitelist_ips[] = $ip;
         continue;
       }
+      // Make sure we have a valid IPv4 address (the API doesn't support IPv6 yet).
+      elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
+        $messages[] = array(
+          'text' => t('Invalid IP address: @ip. Spambot will not rely on it.', array('@ip' => $ip)),
+          'type' => 'warning',
+        );
+        continue;
+      }
 
       $request = array('ip' => $ip);
       $data = array();

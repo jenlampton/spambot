@@ -232,7 +232,13 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
 
   $ip = ip_address();
   if ($ip_threshold > 0 && $ip != '127.0.0.1' && $validation_field_names['ip'] && !spambot_check_whitelist('ip', $ip)) {
-    $request['ip'] = $ip;
+    // Make sure we have a valid IPv4 address (API doesn't support IPv6 yet).
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
+      watchdog('spambot', 'Invalid IP address on registration: @ip. Spambot will not rely on it.', array('@ip' => $ip));
+    }
+    else {
+      $request['ip'] = $ip;
+    }
   }
 
   // Only do a remote API request if there is anything to check.
@@ -386,6 +392,17 @@ function spambot_account_is_spammer($account) {
     foreach ($ips as $ip) {
       // Skip the loopback interface
       if ($ip == '127.0.0.1') {
+        continue;
+      }
+      // Make sure we have a valid IPv4 address (the API doesn't support IPv6 yet).
+      elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
+        $link = l(t('user'), 'user/' . $account->uid);
+        watchdog('spambot', 'Invalid IP address: @ip (uid=@uid, name=@name, email=@email). Spambot will not rely on it.', array(
+          '@ip' => $ip,
+          '@name' => $account->name,
+          '@email' => $account->mail,
+          '@uid' => $account->uid
+          ), WATCHDOG_NOTICE, $link);
         continue;
       }
 
