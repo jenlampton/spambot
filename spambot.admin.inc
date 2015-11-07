@@ -163,7 +163,7 @@ function spambot_settings_form() {
 
     $last_uid = db_select('users', 'u')
       ->fields('u', array('uid'))
-      ->condition('u.uid', 1, '>')
+      ->condition('u.uid', 1, '>=')
       ->condition('u.uid', $last_uid, '<=')
       ->orderBy('u.uid', 'DESC')
       ->range(0, 1)
