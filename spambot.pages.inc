@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @file.
+ * @file
+ * User available pages from Spambot module.
  */
 
 /**
@@ -10,7 +11,7 @@
 function spambot_user_spam($account) {
   // Check if current user isn't anonymous user.
   if (!$account->uid) {
-    drupal_set_message('The Anonymous user account can\'t be reported for spam. If you intended to block a user account verify that the URL is /user/XXXX/spambot where XXXX is a valid UID', 'warning');
+    drupal_set_message(t("The Anonymous user account can't be reported for spam. If you intended to block a user account verify that the URL is /user/XXXX/spambot where XXXX is a valid UID"), 'warning');
     return MENU_NOT_FOUND;
   }
 
@@ -98,7 +99,7 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
           array(
             'attributes' => array(
               'title' => $title,
-            )
+            ),
           )
         ) . ' ' . t('(node, ip=@ip)', array('@ip' => $hostname)),
         '#disabled' => !$key,
@@ -161,7 +162,7 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
     '#type' => 'checkbox',
     '#title' => t('Delete this account'),
     '#default_value' => FALSE,
-  );  
+  );
   $form['action']['action'] = array(
     '#type' => 'submit',
     '#value' => t('Take action'),
@@ -181,13 +182,15 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
  * Validate handler for spambot_user_spam_admin_form() form.
  */
 function spambot_user_spam_admin_form_validate(&$form, &$form_state) {
-  $key_required = (!empty($form_state['values']['report']['nids']) && count(array_filter($form_state['values']['report']['nids']))) ? TRUE : FALSE;  
+  $key_required = (!empty($form_state['values']['report']['nids']) && count(array_filter($form_state['values']['report']['nids']))) ? TRUE : FALSE;
   if (module_exists('comment')) {
     $key_required = (!empty($form_state['values']['report']['cids']) && count(array_filter($form_state['values']['report']['cids']))) || $key_required;
   }
 
   if ($key_required && !variable_get('spambot_sfs_api_key', FALSE)) {
-    form_set_error('', t('To report spammers to www.stopforumspam.com, you need to register for an API key at <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> and enter it into the !page.', array('!page' => l('spambot settings', 'admin/config/system/spambot'))));
+    form_set_error('', t('To report spammers to www.stopforumspam.com, you need to register for an API key at <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> and enter it into the !page.', array(
+      '!page' => l(t('spambot settings'), 'admin/config/system/spambot'),
+    )));
   }
 }
 
@@ -222,14 +225,20 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
   if (spambot_sfs_request($request, $data)) {
     if (!empty($data['email']['appears'])) {
       $messages[] = array(
-        'text' => t('This account\'s email address matches @num times: !link', array('!link' => l($request['email'], 'http://www.stopforumspam.com/search?q=' . $request['email']), '@num' => $data['email']['frequency'])),
+        'text' => t("This account's email address matches %num times: !link", array(
+          '!link' => l($request['email'], 'http://www.stopforumspam.com/search?q=' . $request['email']),
+          '%num' => $data['email']['frequency'],
+        )),
         'type' => 'warning',
       );
     }
 
     if (!empty($data['username']['appears'])) {
       $messages[] = array(
-        'text' => t('This account\'s username matches @num times: !link', array('!link' => l($request['username'], 'http://www.stopforumspam.com/search?q=' . $request['username']), '@num' => $data['username']['frequency'])),
+        'text' => t("This account's username matches %num times: !link", array(
+          '!link' => l($request['username'], 'http://www.stopforumspam.com/search?q=' . $request['username']),
+          '%num' => $data['username']['frequency'],
+        )),
         'type' => 'warning',
       );
     }
@@ -237,13 +246,13 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
     // Check data at whitelist.
     if (spambot_check_whitelist('email', $account->mail)) {
       $messages[] = array(
-        'text' => t('This account\'s email address placed at your whitelist.'),
+        'text' => t("This account's email address placed at your whitelist."),
         'type' => 'status',
       );
     }
     if (spambot_check_whitelist('username', $account->name)) {
       $messages[] = array(
-        'text' => t('This account\'s username placed at your whitelist.'),
+        'text' => t("This account's username placed at your whitelist."),
         'type' => 'status',
       );
     }
@@ -265,7 +274,8 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
         $whitelist_ips[] = $ip;
         continue;
       }
-      // Make sure we have a valid IPv4 address (the API doesn't support IPv6 yet).
+      // Make sure we have a valid IPv4 address
+      // (the API doesn't support IPv6 yet).
       elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
         $messages[] = array(
           'text' => t('Invalid IP address: @ip. Spambot will not rely on it.', array('@ip' => $ip)),
@@ -279,7 +289,10 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
       if (spambot_sfs_request($request, $data)) {
         if (!empty($data['ip']['appears'])) {
           $messages[] = array(
-            'text' => t('An IP address !ip used by this account matches @num times.', array('!ip' => l($ip, 'http://www.stopforumspam.com/search?q=' . $ip), '@num' => $data['ip']['frequency'])),
+            'text' => t('An IP address !ip used by this account matches %num times.', array(
+              '!ip' => l($ip, 'http://www.stopforumspam.com/search?q=' . $ip),
+              '%num' => $data['ip']['frequency'],
+            )),
             'type' => 'warning',
           );
         }
