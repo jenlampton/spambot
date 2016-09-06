@@ -376,7 +376,7 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
     foreach (array_filter($form_state['values']['report']['nids']) as $nid => $unused) {
       $node = node_load($nid);
       if (!empty($node->nid)) {
-        if (spambot_report_account($account, $node_hostnames[$nid], $node->title . "\n\n" . $node->body['und'][0]['summary'] . "\n\n" . $node->body['und'][0]['value'])) {
+        if (spambot_report_account($account, $node_hostnames[$nid], $node->title . "\n\n" . $node->body[LANGUAGE_NONE][0]['summary'] . "\n\n" . $node->body[LANGUAGE_NONE][0]['value'])) {
           drupal_set_message(t('Node %title has been reported.', array('%title' => $node->title)));
         }
         else {
@@ -390,7 +390,7 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
     foreach (array_filter($form_state['values']['report']['cids']) as $cid => $unused) {
       $comment = comment_load($cid);
       if (!empty($comment->cid)) {
-        if (spambot_report_account($account, $comment->hostname, $comment->subject . "\n\n" . $comment->comment_body['und'][0]['value'])) {
+        if (spambot_report_account($account, $comment->hostname, $comment->subject . "\n\n" . $comment->comment_body[LANGUAGE_NONE][0]['value'])) {
           drupal_set_message(t('Comment %title has been reported.', array('%title' => $comment->subject)));
         }
         else {
