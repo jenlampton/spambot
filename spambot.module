@@ -358,8 +358,12 @@ function spambot_account_is_spammer($account) {
 
   // Build request parameters according to the criteria to use.
   $request = array();
-  if (!empty($account->mail) && $email_threshold > 0 && !spambot_check_whitelist('email', $account->mail)) {
-    $request['email'] = $account->mail;
+  if ($email_threshold > 0) {
+    foreach (array('init', 'mail') as $_email_property) {
+      if (!empty($account->{$_email_property}) && !spambot_check_whitelist('email', $account->{$_email_property})) {
+        $request['email'][] = $account->{$_email_property};
+      }
+    }
   }
 
   if (!empty($account->name) && $username_threshold > 0 && !spambot_check_whitelist('username', $account->name)) {
@@ -370,9 +374,17 @@ function spambot_account_is_spammer($account) {
   if ($request) {
     $data = array();
     if (spambot_sfs_request($request, $data)) {
-      if (($email_threshold > 0 && !empty($data['email']['appears']) && $data['email']['frequency'] >= $email_threshold)
-        || ($username_threshold > 0 && !empty($data['username']['appears']) && $data['username']['frequency'] >= $username_threshold)) {
-
+      $email_condition = FALSE;
+      if ($email_threshold > 0) {
+        foreach ($data['email'] as $_email) {
+          if (!empty($_email['appears']) && $_email['frequency'] >= $email_threshold) {
+            $email_condition = TRUE;
+            break;
+          }
+        }
+      }
+      $username_condition = ($username_threshold > 0 && !empty($data['username']['appears']) && $data['username']['frequency'] >= $username_threshold);
+      if ($email_condition || $username_condition) {
         return 1;
       }
     }
