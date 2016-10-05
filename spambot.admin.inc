@@ -149,6 +149,18 @@ function spambot_settings_form() {
     '#default_value' => variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE),
   );
 
+  $form['existing']['spambot_spam_account_nodes_action'] = array(
+    '#type' => 'select',
+    '#title' => t('Action to take with nodes and comments'),
+    '#description' => t('Please select what action to take with nodes and comments for user accounts which are found to be spammers.'),
+    '#options' => array(
+      SPAMBOT_ACTION_NONE => t('None'),
+      SPAMBOT_CONTENT_ACTION_UNPUBLISH => t('Unpublish nodes and comments'),
+      SPAMBOT_CONTENT_ACTION_DELETE => t('Delete nodes and comments'),
+    ),
+    '#default_value' => variable_get('spambot_spam_account_nodes_action', SPAMBOT_ACTION_NONE),
+  );
+
   // Get scan status.
   $suffix = '';
   if ($last_uid = variable_get('spambot_last_checked_uid', 0)) {

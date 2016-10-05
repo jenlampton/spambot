@@ -55,15 +55,16 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
     '#collapsible' => TRUE,
     '#description' => $status,
   );
-  $form['action']['unpublish_content'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Unpublish nodes and comments by this account'),
-    '#default_value' => TRUE,
-  );
-  $form['action']['delete_content'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Delete nodes and comments by this account'),
-    '#default_value' => FALSE,
+  $form['action']['content_action'] = array(
+    '#type' => 'select',
+    '#title' => t('Action to take'),
+    '#description' => t('Please select what action to take with nodes and comments.'),
+    '#options' => array(
+      SPAMBOT_ACTION_NONE => t('None'),
+      SPAMBOT_CONTENT_ACTION_UNPUBLISH => t('Unpublish nodes and comments by this account'),
+      SPAMBOT_CONTENT_ACTION_DELETE => t('Delete nodes and comments by this account'),
+    ),
+    '#default_value' => SPAMBOT_CONTENT_ACTION_UNPUBLISH,
   );
 
   $form['action']['report'] = array(
@@ -344,13 +345,6 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
   }
 
   // Prepare some data.
-  $nodes = db_select('node')
-    ->fields('node', array('nid'))
-    ->condition('uid', $account->uid, '=')
-    ->orderBy('nid')
-    ->execute()
-    ->fetchCol();
-
   $node_hostnames = array();
   $result = db_select('node_spambot')
     ->fields('node_spambot', array('nid', 'hostname'))
@@ -359,16 +353,6 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
     ->execute();
   foreach ($result as $record) {
     $node_hostnames[$record->nid] = $record->hostname;
-  }
-
-  $comments = array();
-  if ($comments_enabled) {
-    $comments = db_select('comment')
-      ->fields('comment', array('cid'))
-      ->condition('uid', $account->uid, '=')
-      ->orderBy('cid')
-      ->execute()
-      ->fetchCol();
   }
 
   // Report posts to www.stopforumspam.com.
@@ -400,31 +384,8 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
     }
   }
 
-  // Delete nodes and content.
-  if (!empty($form_state['values']['delete_content'])) {
-    node_delete_multiple($nodes);
-
-    if ($comments) {
-      comment_delete_multiple($comments);
-    }
-
-    drupal_set_message(t('Nodes and comments have been deleted.'));
-  }
-  elseif (!empty($form_state['values']['unpublish_content'])) {
-    // Unpublish nodes and content.
-    if ($nodes) {
-      module_load_include('inc', 'node', 'node.admin');
-      node_mass_update($nodes, array('status' => 0));
-    }
-
-    if ($comments) {
-      db_update('comment')
-        ->fields(array('status' => COMMENT_NOT_PUBLISHED))
-        ->condition('uid', $account->uid)
-        ->execute();
-    }
-    drupal_set_message(t('Nodes and comments have been unpublished.'));
-  }
+  $action = $form_state['values']['content_action'];
+  spambot_delete_nodes_and_comments($account->uid, $action);
 
   // Delete user.
   if (!empty($form_state['values']['delete_user'])) {

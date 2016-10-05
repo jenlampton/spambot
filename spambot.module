@@ -19,6 +19,9 @@ define('SPAMBOT_DEFAULT_CRON_USER_LIMIT', 0);
 define('SPAMBOT_DEFAULT_BLOCKED_MESSAGE', 'Your email address or username or IP address is blacklisted.');
 define('SPAMBOT_MAX_EVIDENCE_LENGTH', 1024);
 
+define('SPAMBOT_CONTENT_ACTION_UNPUBLISH', 'unpublish_content');
+define('SPAMBOT_CONTENT_ACTION_DELETE', 'delete_content');
+
 /**
  * Implements hook_menu().
  */
@@ -151,6 +154,7 @@ function spambot_cron() {
 
     if ($uids) {
       $action = variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE);
+      $action_nodes = variable_get('spambot_spam_account_nodes_action', SPAMBOT_ACTION_NONE);
       $accounts = user_load_multiple($uids);
 
       foreach ($accounts as $account) {
@@ -197,6 +201,8 @@ function spambot_cron() {
               ), WATCHDOG_NOTICE, $link);
               break;
           }
+
+          spambot_delete_nodes_and_comments($account->uid, $action_nodes);
 
           // Mark this uid as successfully checked.
           variable_set('spambot_last_checked_uid', $account->uid);
@@ -608,5 +614,64 @@ function spambot_add_form_protection(array &$form, array $options = array()) {
     $form['#spambot_validation']['mail'] = !empty($options['mail']) ? $options['mail'] : '';
     $form['#spambot_validation']['ip'] = isset($options['ip']) && is_bool($options['ip']) ? $options['ip'] : TRUE;
     $form['#validate'][] = 'spambot_user_register_form_validate';
+  }
+}
+
+/**
+ * Delete nodes and comments for user accounts which are found to be spammers.
+ *
+ * @param int $uid
+ *   User account ID.
+ * @param string $action
+ *   Action to take with nodes and comments: 'unpublish_content', 'delete_content'.
+ */
+function spambot_delete_nodes_and_comments($uid, $action) {
+  if ($action) {
+    $comments_enabled = module_exists('comment');
+
+    // Prepare some data.
+    $nodes = db_select('node')
+      ->fields('node', array('nid'))
+      ->condition('uid', $uid, '=')
+      ->orderBy('nid')
+      ->execute()
+      ->fetchCol();
+
+    $comments = array();
+    if ($comments_enabled) {
+      $comments = db_select('comment')
+        ->fields('comment', array('cid'))
+        ->condition('uid', $uid, '=')
+        ->orderBy('cid')
+        ->execute()
+        ->fetchCol();
+    }
+
+    switch ($action) {
+      case 'unpublish_content':
+        // Unpublish nodes and content.
+        if ($nodes) {
+          module_load_include('inc', 'node', 'node.admin');
+          node_mass_update($nodes, array('status' => 0));
+        }
+
+        if ($comments) {
+          db_update('comment')
+            ->fields(array('status' => COMMENT_NOT_PUBLISHED))
+            ->condition('uid', $uid)
+            ->execute();
+        }
+        drupal_set_message(t('Nodes and comments have been unpublished.'));
+        break;
+      case 'delete_content':
+        // Delete nodes and content.
+        node_delete_multiple($nodes);
+
+        if ($comments) {
+          comment_delete_multiple($comments);
+        }
+        drupal_set_message(t('Nodes and comments have been deleted.'));
+        break;
+    }
   }
 }
