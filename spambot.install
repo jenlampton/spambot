@@ -36,6 +36,9 @@ function spambot_schema() {
     ),
   );
 
+  $schema['cache_spambot'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_spambot']['description'] = 'Cache table for the Spambot module to store responses from www.stopforumspam.com';
+
   return $schema;
 }
 
@@ -99,4 +102,16 @@ function spambot_update_7101() {
   }
 
   return implode('<br />', $messages);
+}
+
+/**
+ * Adds a cache table for storage of StopForumSpam.com responses.
+ */
+function spambot_update_7102() {
+  if (!db_table_exists('cache_spambot')) {
+    $schema = array();
+    $schema['cache_spambot'] = drupal_get_schema_unprocessed('system', 'cache');
+    $schema['cache_spambot']['description'] = 'Cache table for the Spambot module to store responses from www.stopforumspam.com';
+    db_create_table('cache_spambot', $schema['cache_spambot']);
+  }
 }

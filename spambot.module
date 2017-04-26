@@ -221,6 +221,13 @@ function spambot_cron() {
 }
 
 /**
+ * Implements hook_flush_caches().
+ */
+function spambot_flush_caches() {
+  return array('cache_spambot');
+}
+
+/**
  * Validate callback for user_register form.
  */
 function spambot_user_register_form_validate(&$form, &$form_state) {
@@ -318,6 +325,38 @@ function spambot_sfs_request(array $query, array &$data) {
     return FALSE;
   }
 
+  // Attempt to return a response from the cache bins if cache is enabled.
+  $cache_enabled = variable_get('spambot_enable_cache', TRUE);
+  if ($cache_enabled) {
+    if (isset($query['email'])) {
+      $cache_email = cache_get("email:{$query['email']}", 'cache_spambot');
+      if ($cache_email !== FALSE) {
+        $data['email'] = $cache_email->data;
+        unset($query['email']);
+      }
+    }
+    if (isset($query['username'])) {
+      $cache_username = cache_get("username:{$query['username']}", 'cache_spambot');
+      if ($cache_username !== FALSE) {
+        $data['username'] = $cache_username->data;
+        unset($query['username']);
+      }
+    }
+    if (isset($query['ip'])) {
+      $cache_ip = cache_get("ip:{$query['ip']}", 'cache_spambot');
+      if ($cache_ip !== FALSE) {
+        $data['ip'] = $cache_ip->data;
+        unset($query['ip']);
+      }
+    }
+
+    // Serve only a cached response if one exists.
+    if (!empty($data)) {
+      $data['success'] = TRUE;
+      return TRUE;
+    }
+  }
+
   // Use php serialisation format.
   $query['f'] = 'serial';
 
@@ -325,6 +364,29 @@ function spambot_sfs_request(array $query, array &$data) {
   $result = drupal_http_request($url);
   if (!empty($result->code) && $result->code == 200 && empty($result->error) && !empty($result->data)) {
     $data = unserialize($result->data);
+
+    // Store responses to the cache for fast lookups.
+    if ($cache_enabled) {
+      $expire = variable_get('spambot_cache_expire', CACHE_PERMANENT);
+      $expire = ($expire != CACHE_PERMANENT) ? time() + $expire : CACHE_PERMANENT;
+      $expire_false = variable_get('spambot_cache_expire_false', 300);
+      $expire_false = ($expire_false != CACHE_PERMANENT) ?
+        time() + $expire_false : CACHE_PERMANENT;
+
+      if (!empty($data['email'])) {
+        $expire_email = $data['email']['appears'] ? $expire : $expire_false;
+        cache_set("email:{$query['email']}", $data['email'], 'cache_spambot', $expire_email);
+      }
+      if (!empty($data['username'])) {
+        $expire_username = $data['username']['appears'] ? $expire : $expire_false;
+        cache_set("username:{$query['username']}", $data['username'], 'cache_spambot', $expire_username);
+      }
+      if (!empty($data['ip'])) {
+        $expire_ip = $data['ip']['appears'] ? $expire : $expire_false;
+        cache_set("ip:{$query['ip']}", $data['ip'], 'cache_spambot', $expire_ip);
+      }
+    }
+
     if (!empty($data['success'])) {
       return TRUE;
     }

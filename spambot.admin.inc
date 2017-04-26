@@ -270,5 +270,50 @@ function spambot_settings_form() {
     '#default_value' => variable_get('spambot_sfs_api_key', FALSE),
   );
 
+  $form['cache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Caching'),
+    '#description' => t('This module can cache the results from  www.stopforumspam.com to reduce the load on the remote server.'),
+    '#collapsible' => TRUE,
+  );
+  $form['cache']['spambot_enable_cache'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable result caching'),
+    '#description' => t('If ticked, results from queries to www.stopforumspam.com  will be cached.'),
+    '#default_value' => variable_get('spambot_enable_cache', TRUE),
+  );
+  $form['cache']['spambot_cache_expire'] = array(
+    '#type' => 'select',
+    '#title' => t('Time to expire'),
+    '#description' => t('Specify the amount of time to cache the response. See  Drupal documentation on Caching for when/how entries are removed from the  cache.'),
+    '#options' => array(
+      CACHE_PERMANENT => t('Keep until explicitly removed'),
+      60 => t('1 minute'),
+      300 => t('5 minutes'),
+      1800 => t('30 minutes'),
+      3600 => t('1 hour'),
+      86400 => t('1 day'),
+      604800 => t('1 week'),
+      2592000 => t('1 month (30 days)'),
+    ),
+    '#default_value' => variable_get('spambot_cache_expire', CACHE_PERMANENT),
+  );
+  $form['cache']['spambot_cache_expire_false'] = array(
+    '#type' => 'select',
+    '#title' => t('Time to expire responses which do not match a spammer'),
+    '#description' => t('Specify the amount of time to cache a false response. See  Drupal documentation on Caching for when/how entries are removed from the  cache.'),
+    '#options' => array(
+      CACHE_PERMANENT => t('Keep until explicitly removed'),
+      60 => t('1 minute'),
+      300 => t('5 minutes'),
+      1800 => t('30 minutes'),
+      3600 => t('1 hour'),
+      86400 => t('1 day'),
+      604800 => t('1 week'),
+      2592000 => t('1 month (30 days)'),
+    ),
+    '#default_value' => variable_get('spambot_cache_expire_false', 300),
+  );
+
   return system_settings_form($form);
 }
