@@ -565,6 +565,25 @@ function spambot_account_ip_addresses($account) {
     $hostnames = array_merge($hostnames, $items);
   }
 
+  // Retrieve IPs from IP address manager.
+  if (module_exists('ip')) {
+    $items = db_select('ip_tracker')
+      ->distinct()
+      ->fields('ip_tracker', ['ip'])
+      ->condition('uid', $account->uid, '=')
+      ->execute()
+      ->fetchCol();
+
+    $rows = array();
+    foreach ($items as $row) {
+      if (isset($row->ip)) {
+        $row->ip = long2ip($row->ip);
+        $rows[] = $row;
+      }
+    }
+    $hostnames = array_merge($hostnames, $rows);
+  }
+
   $hostnames = array_unique($hostnames);
   return $hostnames;
 }
