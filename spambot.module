@@ -190,7 +190,7 @@ function spambot_cron() {
                 '@name' => $account->name,
                 '@email' => $account->mail,
                 '@uid' => $account->uid,
-              ), WATCHDOG_NOTICE, $link);
+              ), WATCHDOG_NOTICE);
               break;
 
             default:
