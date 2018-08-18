@@ -329,10 +329,13 @@ function spambot_sfs_request(array $query, array &$data) {
   $cache_enabled = variable_get('spambot_enable_cache', TRUE);
   if ($cache_enabled) {
     if (isset($query['email'])) {
-      $cache_email = cache_get("email:{$query['email']}", 'cache_spambot');
-      if ($cache_email !== FALSE) {
-        $data['email'] = $cache_email->data;
-        unset($query['email']);
+      $query['email'] = is_array($query['email']) ? $query['email'] : array($query['email']);
+      foreach ($query['email'] as $query_email) {
+        $cache_email = cache_get("email:{$query_email}", 'cache_spambot');
+        if ($cache_email !== FALSE) {
+          $data['email'] = $cache_email->data;
+          unset($query_email);
+        }
       }
     }
     if (isset($query['username'])) {
@@ -374,12 +377,16 @@ function spambot_sfs_request(array $query, array &$data) {
         time() + $expire_false : CACHE_PERMANENT;
 
       if (!empty($data['email'])) {
-        $expire_email = $data['email']['appears'] ? $expire : $expire_false;
-        cache_set("email:{$query['email']}", $data['email'], 'cache_spambot', $expire_email);
+        foreach ($data['email'] as $data_email) {
+          $expire_email = $data_email['appears'] ? $expire : $expire_false;
+          cache_set("email:{$data_email['value']}", $data_email, 'cache_spambot', $expire_email);
+        }
       }
       if (!empty($data['username'])) {
-        $expire_username = $data['username']['appears'] ? $expire : $expire_false;
-        cache_set("username:{$query['username']}", $data['username'], 'cache_spambot', $expire_username);
+        foreach ($data['username'] as $data_username) {
+          $expire_username = $data_username['appears'] ? $expire : $expire_false;
+          cache_set("username:{$query['username']}", $data_username, 'cache_spambot', $expire_username);
+        }
       }
       if (!empty($data['ip'])) {
         $expire_ip = $data['ip']['appears'] ? $expire : $expire_false;
