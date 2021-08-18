@@ -39,7 +39,7 @@ complete text.
 
 Maintainers
 -----------
-Ported to Backdropby docwilmot
+Ported to Backdrop by docwilmot
 
 Seeking maintainers.
 
