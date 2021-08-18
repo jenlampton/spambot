@@ -4,4 +4,5 @@ package = "Spam control"
 
 configure = admin/config/system/spambot
 
-core = 7.x
+backdrop = 1.x
+type = module

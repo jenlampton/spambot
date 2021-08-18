@@ -11,18 +11,18 @@
 function spambot_user_spam($account) {
   // Check if current user isn't anonymous user.
   if (!$account->uid) {
-    drupal_set_message(t("The Anonymous user account can't be reported for spam. If you intended to block a user account verify that the URL is /user/XXXX/spambot where XXXX is a valid UID"), 'warning');
+    backdrop_set_message(t("The Anonymous user account can't be reported for spam. If you intended to block a user account verify that the URL is /user/XXXX/spambot where XXXX is a valid UID"), 'warning');
     return MENU_NOT_FOUND;
   }
 
-  return drupal_get_form('spambot_user_spam_admin_form', $account);
+  return backdrop_get_form('spambot_user_spam_admin_form', $account);
 }
 
 /**
  * Form builder for spambot_user_spam_admin_form form.
  */
 function spambot_user_spam_admin_form($form, &$form_state, $account) {
-  $key = variable_get('spambot_sfs_api_key', FALSE);
+  $key = config_get('spambot.settings', 'spambot_sfs_api_key');
   $comments_enabled = module_exists('comment');
 
   $node_count = db_select('node', 'n')
@@ -95,13 +95,13 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
       $form['action']['report']['nids'][$nid] = array(
         '#type' => 'checkbox',
         '#title' => l(
-          $title,
-          "node/$nid",
+          $title, 
+          "node/$nid", 
           array(
-            'attributes' => array(
-              'title' => $title,
-            ),
-          )
+          'attributes' => array(
+            'title' => $title,
+          ),
+        )
         ) . ' ' . t('(node, ip=@ip)', array('@ip' => $hostname)),
         '#disabled' => !$key,
       );
@@ -130,14 +130,14 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
         $form['action']['report']['cids'][$cid] = array(
           '#type' => 'checkbox',
           '#title' => l(
-            $subject,
-            "node/$comment->nid",
+            $subject, 
+            "node/$comment->nid", 
             array(
-              'fragment' => "comment-$comment->cid",
-              'attributes' => array(
-                'title' => $subject,
-              ),
-            )
+            'fragment' => "comment-$comment->cid",
+            'attributes' => array(
+              'title' => $subject,
+            ),
+          )
           ) . ' ' . t('(comment, ip=@ip)', array('@ip' => $comment->hostname)),
           '#disabled' => !$key,
         );
@@ -146,9 +146,9 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
   }
 
   if ($key) {
-    $comment_cids = $comments_enabled ? count($form['action']['report']['cids']) : 0;
+    $comment_cids = $comments_enabled?count($form['action']['report']['cids']) : 0;
     $evidence_count = count($form['action']['report']['nids']) + $comment_cids;
-    $form['action']['report']['#description'] = $evidence_count ? t('Select one or more posts below to report them to www.stopforumspam.com.') : t('This account cannot be reported because no evidence or IP address is available.');
+    $form['action']['report']['#description'] = $evidence_count?t('Select one or more posts below to report them to www.stopforumspam.com.') : t('This account cannot be reported because no evidence or IP address is available.');
   }
   else {
     $form['action']['report']['#description'] = t('An API key from <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> must <a href="!admin-url">be configured</a> to report spammers.', array('!admin-url' => url('admin/config/system/spambot')));
@@ -183,12 +183,12 @@ function spambot_user_spam_admin_form($form, &$form_state, $account) {
  * Validate handler for spambot_user_spam_admin_form() form.
  */
 function spambot_user_spam_admin_form_validate(&$form, &$form_state) {
-  $key_required = (!empty($form_state['values']['report']['nids']) && count(array_filter($form_state['values']['report']['nids']))) ? TRUE : FALSE;
+  $key_required = (!empty($form_state['values']['report']['nids']) && count(array_filter($form_state['values']['report']['nids'])))?TRUE : FALSE;
   if (module_exists('comment')) {
     $key_required = (!empty($form_state['values']['report']['cids']) && count(array_filter($form_state['values']['report']['cids']))) || $key_required;
   }
 
-  if ($key_required && !variable_get('spambot_sfs_api_key', FALSE)) {
+  if ($key_required && !config_get('spambot.settings', 'spambot_sfs_api_key')) {
     form_set_error('', t('To report spammers to www.stopforumspam.com, you need to register for an API key at <a href="http://www.stopforumspam.com">www.stopforumspam.com</a> and enter it into the !page.', array(
       '!page' => l(t('spambot settings'), 'admin/config/system/spambot'),
     )));
@@ -259,7 +259,7 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
     }
   }
   else {
-    drupal_set_message(t('Error contacting service.'), 'warning');
+    backdrop_set_message(t('Error contacting service.'), 'warning');
     $service_down = TRUE;
   }
 
@@ -299,7 +299,7 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
         }
       }
       else {
-        drupal_set_message(t('Error contacting service.'), 'warning');
+        backdrop_set_message(t('Error contacting service.'), 'warning');
         break;
       }
     }
@@ -314,11 +314,11 @@ function _spambot_user_spam_admin_form_submit_check(&$form, &$form_state, $accou
 
   if ($messages) {
     foreach ($messages as $message) {
-      drupal_set_message($message['text'], $message['type']);
+      backdrop_set_message($message['text'], $message['type']);
     }
   }
   else {
-    drupal_set_message(t('No matches against known spammers found.'));
+    backdrop_set_message(t('No matches against known spammers found.'));
   }
 }
 
@@ -329,7 +329,7 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
   $comments_enabled = module_exists('comment');
 
   if ($account->uid == 1) {
-    drupal_set_message(t('Sorry, taking action against uid 1 is not allowed.'), 'warning');
+    backdrop_set_message(t('Sorry, taking action against uid 1 is not allowed.'), 'warning');
     return;
   }
 
@@ -337,10 +337,10 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
   if (!empty($form_state['values']['block_user'])) {
     if ($account->status) {
       user_save($account, array('status' => 0));
-      drupal_set_message(t('Account blocked.'));
+      backdrop_set_message(t('Account blocked.'));
     }
     else {
-      drupal_set_message(t('This account is already blocked.'));
+      backdrop_set_message(t('This account is already blocked.'));
     }
   }
 
@@ -361,10 +361,10 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
       $node = node_load($nid);
       if (!empty($node->nid)) {
         if (spambot_report_account($account, $node_hostnames[$nid], $node->title . "\n\n" . $node->body[LANGUAGE_NONE][0]['summary'] . "\n\n" . $node->body[LANGUAGE_NONE][0]['value'])) {
-          drupal_set_message(t('Node %title has been reported.', array('%title' => $node->title)));
+          backdrop_set_message(t('Node %title has been reported.', array('%title' => $node->title)));
         }
         else {
-          drupal_set_message(t('There was a problem reporting node %title.', array('%title' => $node->title)));
+          backdrop_set_message(t('There was a problem reporting node %title.', array('%title' => $node->title)));
         }
       }
     }
@@ -375,10 +375,10 @@ function _spambot_user_spam_admin_form_submit_action(&$form, &$form_state, $acco
       $comment = comment_load($cid);
       if (!empty($comment->cid)) {
         if (spambot_report_account($account, $comment->hostname, $comment->subject . "\n\n" . $comment->comment_body[LANGUAGE_NONE][0]['value'])) {
-          drupal_set_message(t('Comment %title has been reported.', array('%title' => $comment->subject)));
+          backdrop_set_message(t('Comment %title has been reported.', array('%title' => $comment->subject)));
         }
         else {
-          drupal_set_message(t('There was a problem reporting comment %title.', array('%title' => $comment->subject)));
+          backdrop_set_message(t('There was a problem reporting comment %title.', array('%title' => $comment->subject)));
         }
       }
     }

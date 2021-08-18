@@ -9,6 +9,7 @@
  * Form builder for settings form.
  */
 function spambot_settings_form() {
+  $config = config('spambot.settings');
   $numbers = array(
     1 => 1,
     2 => 2,
@@ -35,6 +36,7 @@ function spambot_settings_form() {
   );
 
   // Fieldset for set up spam criteria.
+  $form['#config'] = 'spambot.settings';
   $form['criteria'] = array(
     '#type' => 'fieldset',
     '#title' => t('Spammer criteria'),
@@ -47,21 +49,21 @@ function spambot_settings_form() {
     '#title' => t('Number of times the email has been reported is equal to or more than'),
     '#description' => t('If the email address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer.'),
     '#options' => array(0 => t("Don't use email as a criteria")) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL),
+    '#default_value' => $config->get('spambot_criteria_email'),
   );
   $form['criteria']['spambot_criteria_username'] = array(
     '#type' => 'select',
     '#title' => t('Number of times the username has been reported is equal to or more than'),
     '#description' => t('If the username for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about using this option as you may accidentally block genuine users who happen to choose the same username as a known spammer.'),
     '#options' => array(0 => t("Don't use username as a criteria")) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME),
+    '#default_value' => $config->get('spambot_criteria_username'),
   );
   $form['criteria']['spambot_criteria_ip'] = array(
     '#type' => 'select',
     '#title' => t('Number of times the IP address has been reported is equal to or more than'),
     '#description' => t('If the IP address for a user or user registration has been reported to www.stopforumspam.com this many times, then it is deemed as a spammer. Be careful about setting this threshold too low as IP addresses can change.'),
     '#options' => array(0 => t("Don't use IP address as a criteria")) + $numbers,
-    '#default_value' => variable_get('spambot_criteria_ip', SPAMBOT_DEFAULT_CRITERIA_IP),
+    '#default_value' => $config->get('spambot_criteria_ip'),
   );
 
   // White lists.
@@ -75,19 +77,19 @@ function spambot_settings_form() {
     '#type' => 'textarea',
     '#title' => t('Allowed email addresses'),
     '#description' => t('Enter email addresses, one per line.'),
-    '#default_value' => variable_get('spambot_whitelist_email', ''),
+    '#default_value' => $config->get('spambot_whitelist_email'),
   );
   $form['spambot_whitelist']['spambot_whitelist_username'] = array(
     '#type' => 'textarea',
     '#title' => t('Allowed usernames'),
     '#description' => t('Enter usernames, one per line.'),
-    '#default_value' => variable_get('spambot_whitelist_username', ''),
+    '#default_value' => $config->get('spambot_whitelist_username'),
   );
   $form['spambot_whitelist']['spambot_whitelist_ip'] = array(
     '#type' => 'textarea',
     '#title' => t('Allowed IP addresses'),
     '#description' => t('Enter IP addresses, one per line.'),
-    '#default_value' => variable_get('spambot_whitelist_ip', ''),
+    '#default_value' => $config->get('spambot_whitelist_ip'),
   );
 
   // Fieldset for configure protecting at user register form.
@@ -101,7 +103,7 @@ function spambot_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Protect the user registration form'),
     '#description' => t('If ticked, new user registrations will be tested if they match any known spammers and blacklisted.'),
-    '#default_value' => variable_get('spambot_user_register_protect', TRUE),
+    '#default_value' => $config->get('spambot_user_register_protect'),
   );
 
   $sleep_options = array(t("Don't delay"), t('1 second'));
@@ -113,7 +115,7 @@ function spambot_settings_form() {
     '#title' => t('If blacklisted, delay for'),
     '#description' => t('If an attempted user registration is blacklisted, you can choose to deliberately delay the request. This can be useful for slowing them down if they continually try to register.<br />Be careful about choosing too large a value for this as it may exceed your PHP max_execution_time.'),
     '#options' => $sleep_options,
-    '#default_value' => variable_get('spambot_blacklisted_delay', SPAMBOT_DEFAULT_DELAY),
+    '#default_value' => $config->get('spambot_blacklisted_delay'),
   );
 
   // Fieldset for set up scanning of existing accounts.
@@ -129,13 +131,13 @@ function spambot_settings_form() {
     '#title' => t('Maximum number of user accounts to scan per cron'),
     '#description' => t('Enter the number of user accounts to scan for each cron. If you do not want to scan existing user accounts, leave this as 0.<br />Be careful not to make this value too large, as it will slow your cron execution down and may cause your site to query www.stopforumspam.com more times than allowed each day.'),
     '#size' => 10,
-    '#default_value' => variable_get('spambot_cron_user_limit', SPAMBOT_DEFAULT_CRON_USER_LIMIT),
+    '#default_value' => $config->get('spambot_cron_user_limit'),
   );
   $form['existing']['spambot_check_blocked_accounts'] = array(
     '#type' => 'checkbox',
     '#title' => t('Scan blocked accounts'),
     '#description' => t('Tick this to scan blocked accounts. Otherwise blocked accounts are not scanned.'),
-    '#default_value' => variable_get('spambot_check_blocked_accounts', FALSE),
+    '#default_value' => $config->get('spambot_check_blocked_accounts'),
   );
   $form['existing']['spambot_spam_account_action'] = array(
     '#type' => 'select',
@@ -146,7 +148,7 @@ function spambot_settings_form() {
       SPAMBOT_ACTION_BLOCK => t('Block user account'),
       SPAMBOT_ACTION_DELETE => t('Delete user account'),
     ),
-    '#default_value' => variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE),
+    '#default_value' => $config->get('spambot_spam_account_action'),
   );
 
   $form['existing']['spambot_spam_account_nodes_action'] = array(
@@ -158,12 +160,12 @@ function spambot_settings_form() {
       SPAMBOT_CONTENT_ACTION_UNPUBLISH => t('Unpublish nodes and comments'),
       SPAMBOT_CONTENT_ACTION_DELETE => t('Delete nodes and comments'),
     ),
-    '#default_value' => variable_get('spambot_spam_account_nodes_action', SPAMBOT_ACTION_NONE),
+    '#default_value' => $config->get('spambot_spam_account_nodes_action'),
   );
 
   // Get scan status.
   $suffix = '';
-  if ($last_uid = variable_get('spambot_last_checked_uid', 0)) {
+  if ($last_uid = $config->get('spambot_last_checked_uid')) {
     $num_checked = db_select('users', 'u')
       ->fields('u', array('uid'))
       ->condition('u.uid', 1, '>')
@@ -231,21 +233,21 @@ function spambot_settings_form() {
     '#type' => 'textarea',
     '#title' => t('User registration blocked message (blocked email address)'),
     '#rows' => 1,
-    '#default_value' => variable_get('spambot_blocked_message_email', SPAMBOT_DEFAULT_BLOCKED_MESSAGE),
+    '#default_value' => $config->get('spambot_blocked_message_email'),
     '#description' => t('Message to display when user action is blocked due to email address. <br />Showing a specific reason why registration was blocked may make spambot easier to circumvent.<br />The following tokens are available: <em>@email %email @username %username @ip %ip</em>'),
   );
   $form['messages']['spambot_blocked_message_username'] = array(
     '#type' => 'textarea',
     '#title' => t('User registration blocked message (blocked username)'),
     '#rows' => 1,
-    '#default_value' => variable_get('spambot_blocked_message_username', SPAMBOT_DEFAULT_BLOCKED_MESSAGE),
+    '#default_value' => $config->get('spambot_blocked_message_username'),
     '#description' => t('Message to display when user action is blocked due to username.<br />The following tokens are available: <em>@email %email @username %username @ip %ip</em>'),
   );
   $form['messages']['spambot_blocked_message_ip'] = array(
     '#type' => 'textarea',
     '#title' => t('User registration blocked message (blocked ip address)'),
     '#rows' => 1,
-    '#default_value' => variable_get('spambot_blocked_message_ip', SPAMBOT_DEFAULT_BLOCKED_MESSAGE),
+    '#default_value' => $config->get('spambot_blocked_message_ip'),
     '#description' => t('Message to display when user action is blocked due to ip address.<br />The following tokens are available: <em>@email %email @username %username @ip %ip</em>'),
   );
 
@@ -258,8 +260,8 @@ function spambot_settings_form() {
   );
   $form['logging']['spambot_log_blocked_registration'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Log information about blocked registrations into Drupal log'),
-    '#default_value' => variable_get('spambot_log_blocked_registration', TRUE),
+    '#title' => t('Log information about blocked registrations into Backdrop log'),
+    '#default_value' => $config->get('spambot_log_blocked_registration'),
   );
 
   // StopFormSpam API key.
@@ -267,7 +269,7 @@ function spambot_settings_form() {
     '#type' => 'textfield',
     '#title' => t('www.stopforumspam.com API key'),
     '#description' => t('If you wish to report spammers to Stop Forum Spam, you need to register for an API key at the <a href="http://www.stopforumspam.com">Stop Forum Spam</a> website.'),
-    '#default_value' => variable_get('spambot_sfs_api_key', FALSE),
+    '#default_value' => $config->get('spambot_sfs_api_key'),
   );
 
   $form['cache'] = array(
@@ -280,12 +282,12 @@ function spambot_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Enable result caching'),
     '#description' => t('If ticked, results from queries to www.stopforumspam.com  will be cached.'),
-    '#default_value' => variable_get('spambot_enable_cache', TRUE),
+    '#default_value' => $config->get('spambot_enable_cache'),
   );
   $form['cache']['spambot_cache_expire'] = array(
     '#type' => 'select',
     '#title' => t('Time to expire'),
-    '#description' => t('Specify the amount of time to cache the response. See  Drupal documentation on Caching for when/how entries are removed from the  cache.'),
+    '#description' => t('Specify the amount of time to cache the response. See  Backdrop documentation on Caching for when/how entries are removed from the  cache.'),
     '#options' => array(
       CACHE_PERMANENT => t('Keep until explicitly removed'),
       60 => t('1 minute'),
@@ -296,12 +298,12 @@ function spambot_settings_form() {
       604800 => t('1 week'),
       2592000 => t('1 month (30 days)'),
     ),
-    '#default_value' => variable_get('spambot_cache_expire', CACHE_PERMANENT),
+    '#default_value' => $config->get('spambot_cache_expire'),
   );
   $form['cache']['spambot_cache_expire_false'] = array(
     '#type' => 'select',
     '#title' => t('Time to expire responses which do not match a spammer'),
-    '#description' => t('Specify the amount of time to cache a false response. See  Drupal documentation on Caching for when/how entries are removed from the  cache.'),
+    '#description' => t('Specify the amount of time to cache a false response. See  Backdrop documentation on Caching for when/how entries are removed from the  cache.'),
     '#options' => array(
       CACHE_PERMANENT => t('Keep until explicitly removed'),
       60 => t('1 minute'),
@@ -312,7 +314,7 @@ function spambot_settings_form() {
       604800 => t('1 week'),
       2592000 => t('1 month (30 days)'),
     ),
-    '#default_value' => variable_get('spambot_cache_expire_false', 300),
+    '#default_value' => $config->get('spambot_cache_expire_false'),
   );
 
   return system_settings_form($form);

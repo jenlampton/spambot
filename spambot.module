@@ -29,7 +29,7 @@ function spambot_menu() {
   $items['admin/config/system/spambot'] = array(
     'title' => 'Spambot',
     'description' => 'Configure the spambot module',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('spambot_settings_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'spambot.admin.inc',
@@ -71,17 +71,28 @@ function spambot_admin_paths() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function spambot_config_info() {
+  $prefixes['spambot.settings'] = array(
+    'label' => t('Spambot settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
 function spambot_form_user_register_form_alter(&$form, &$form_state) {
-  if (variable_get('spambot_user_register_protect', TRUE)) {
+  if (config_get('spambot.settings', 'spambot_user_register_protect')) {
     spambot_add_form_protection(
-      $form,
+      $form, 
       array(
-        'mail' => 'mail',
-        'name' => 'name',
-        'ip' => TRUE,
-      )
+      'mail' => 'mail',
+      'name' => 'name',
+      'ip' => TRUE,
+    )
     );
   }
 }
@@ -112,10 +123,10 @@ function spambot_form_user_admin_account_alter(&$form, &$form_state, $form_id) {
 function spambot_node_insert($node) {
   db_insert('node_spambot')
     ->fields(array(
-      'nid' => $node->nid,
-      'uid' => $node->uid,
-      'hostname' => ip_address(),
-    ))
+    'nid' => $node->nid,
+    'uid' => $node->uid,
+    'hostname' => ip_address(),
+  ))
     ->execute();
 }
 
@@ -132,8 +143,9 @@ function spambot_node_delete($node) {
  * Implements hook_cron().
  */
 function spambot_cron() {
-  if ($limit = variable_get('spambot_cron_user_limit', SPAMBOT_DEFAULT_CRON_USER_LIMIT)) {
-    $last_uid = variable_get('spambot_last_checked_uid', 0);
+  $config = config('spambot.settings');
+  if ($limit = $config->get('spambot_cron_user_limit')) {
+    $last_uid = $config->get('spambot_last_checked_uid');
     if ($last_uid < 1) {
       // Skip scanning the anonymous and superadmin users.
       $last_uid = 1;
@@ -144,7 +156,7 @@ function spambot_cron() {
       ->condition('uid', $last_uid, '>')
       ->orderBy('uid')
       ->range(0, $limit);
-    if (!variable_get('spambot_check_blocked_accounts', FALSE)) {
+    if (!$config->get('spambot_check_blocked_accounts')) {
       $query->condition('status', 1);
     }
 
@@ -153,8 +165,8 @@ function spambot_cron() {
       ->fetchCol();
 
     if ($uids) {
-      $action = variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE);
-      $action_nodes = variable_get('spambot_spam_account_nodes_action', SPAMBOT_ACTION_NONE);
+      $action = $config->get('spambot_spam_account_action');
+      $action_nodes = $config->get('spambot_spam_account_nodes_action');
       $accounts = user_load_multiple($uids);
 
       foreach ($accounts as $account) {
@@ -162,7 +174,7 @@ function spambot_cron() {
 
         if ($result > 0) {
           $link = l(t('spammer'), 'user/' . $account->uid);
-          switch (user_access('protected from spambot scans', $account) ? SPAMBOT_ACTION_NONE : $action) {
+          switch (user_access('protected from spambot scans', $account)?SPAMBOT_ACTION_NONE : $action) {
             case SPAMBOT_ACTION_BLOCK:
               if ($account->status) {
                 // Block spammer's account.
@@ -205,11 +217,11 @@ function spambot_cron() {
           spambot_delete_nodes_and_comments($account->uid, $action_nodes);
 
           // Mark this uid as successfully checked.
-          variable_set('spambot_last_checked_uid', $account->uid);
+          config_set('spambot.settings', 'spambot_last_checked_uid', $account->uid);
         }
         elseif ($result == 0) {
           // Mark this uid as successfully checked.
-          variable_set('spambot_last_checked_uid', $account->uid);
+          config_set('spambot.settings', 'spambot_last_checked_uid', $account->uid);
         }
         elseif ($result < 0) {
           // Error contacting service, so pause processing.
@@ -231,13 +243,14 @@ function spambot_flush_caches() {
  * Validate callback for user_register form.
  */
 function spambot_user_register_form_validate(&$form, &$form_state) {
+  $config = config('spambot.settings');
   $validation_field_names = $form['#spambot_validation'];
   $values = $form_state['values'];
   $form_errors = form_get_errors();
 
-  $email_threshold = variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL);
-  $username_threshold = variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME);
-  $ip_threshold = variable_get('spambot_criteria_ip', SPAMBOT_DEFAULT_CRITERIA_IP);
+  $email_threshold = $config->get('spambot_criteria_email');
+  $username_threshold = $config->get('spambot_criteria_username');
+  $ip_threshold = $config->get('spambot_criteria_ip');
 
   // Build request parameters according to the criteria to use.
   $request = array();
@@ -275,20 +288,20 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
 
       $reasons = array();
       if ($email_threshold > 0 && !empty($data['email']['appears']) && $data['email']['frequency'] >= $email_threshold) {
-        form_set_error('mail', format_string(variable_get('spambot_blocked_message_email', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
+        form_set_error('mail', format_string($config->get('spambot_blocked_message_email'), $substitutions));
         $reasons[] = t('email=@value', array('@value' => $request['email']));
       }
       if ($username_threshold > 0 && !empty($data['username']['appears']) && $data['username']['frequency'] >= $username_threshold) {
-        form_set_error('name', format_string(variable_get('spambot_blocked_message_username', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
+        form_set_error('name', format_string($config->get('spambot_blocked_message_username'), $substitutions));
         $reasons[] = t('username=@value', array('@value' => $request['username']));
       }
       if ($ip_threshold > 0 && !empty($data['ip']['appears']) && $data['ip']['frequency'] >= $ip_threshold) {
-        form_set_error('', format_string(variable_get('spambot_blocked_message_ip', SPAMBOT_DEFAULT_BLOCKED_MESSAGE), $substitutions));
+        form_set_error('', format_string($config->get('spambot_blocked_message_ip'), $substitutions));
         $reasons[] = t('ip=@value', array('@value' => $request['ip']));
       }
 
       if ($reasons) {
-        if (variable_get('spambot_log_blocked_registration', TRUE)) {
+        if ($config->get('spambot_log_blocked_registration')) {
           watchdog('spambot', 'Blocked registration: @reasons', array('@reasons' => implode(',', $reasons)));
 
           $hook_args = array(
@@ -299,7 +312,7 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
         }
 
         // Slow them down if configured.
-        if ($delay = variable_get('spambot_blacklisted_delay', SPAMBOT_DEFAULT_DELAY)) {
+        if ($delay = $config->get('spambot_blacklisted_delay')) {
           sleep($delay);
         }
       }
@@ -320,13 +333,14 @@ function spambot_user_register_form_validate(&$form, &$form_state) {
  *   FALSE otherwise.
  */
 function spambot_sfs_request(array $query, array &$data) {
+  $config = config('spambot.settings');
   // An empty request results in no match.
   if (empty($query)) {
     return FALSE;
   }
 
   // Attempt to return a response from the cache bins if cache is enabled.
-  $cache_enabled = variable_get('spambot_enable_cache', TRUE);
+  $cache_enabled = $config->get('spambot_enable_cache');
   if ($cache_enabled) {
     if (isset($query['email'])) {
       $query['email'] = is_array($query['email']) ? $query['email'] : array($query['email']);
@@ -364,16 +378,16 @@ function spambot_sfs_request(array $query, array &$data) {
   $query['f'] = 'serial';
 
   $url = 'http://www.stopforumspam.com/api?' . http_build_query($query, '', '&');
-  $result = drupal_http_request($url);
+  $result = backdrop_http_request($url);
   if (!empty($result->code) && $result->code == 200 && empty($result->error) && !empty($result->data)) {
     $data = unserialize($result->data);
 
     // Store responses to the cache for fast lookups.
     if ($cache_enabled) {
-      $expire = variable_get('spambot_cache_expire', CACHE_PERMANENT);
-      $expire = ($expire != CACHE_PERMANENT) ? time() + $expire : CACHE_PERMANENT;
-      $expire_false = variable_get('spambot_cache_expire_false', 300);
-      $expire_false = ($expire_false != CACHE_PERMANENT) ?
+      $expire = $config->get('spambot_cache_expire');
+      $expire = ($expire != CACHE_PERMANENT)?time() + $expire : CACHE_PERMANENT;
+      $expire_false = $config->get('spambot_cache_expire_false');
+      $expire_false = ($expire_false != CACHE_PERMANENT)?
         time() + $expire_false : CACHE_PERMANENT;
 
       if (!empty($data['email'])) {
@@ -427,9 +441,10 @@ function spambot_sfs_request(array $query, array &$data) {
  *   Positive if spammer, 0 if not spammer, negative if error.
  */
 function spambot_account_is_spammer($account) {
-  $email_threshold = variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL);
-  $username_threshold = variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME);
-  $ip_threshold = variable_get('spambot_criteria_ip', SPAMBOT_DEFAULT_CRITERIA_IP);
+  $config = config('spambot.settings');
+  $email_threshold = $config->get('spambot_criteria_email');
+  $username_threshold = $config->get('spambot_criteria_username');
+  $ip_threshold = $config->get('spambot_criteria_ip');
 
   // Build request parameters according to the criteria to use.
   $request = array();
@@ -613,7 +628,7 @@ function spambot_account_ip_addresses($account) {
 function spambot_report_account($account, $ip, $evidence) {
   $success = FALSE;
 
-  if ($key = variable_get('spambot_sfs_api_key', FALSE)) {
+  if ($key = config_get('spambot.settings', 'spambot_sfs_api_key')) {
     $query['api_key'] = $key;
     $query['email'] = $account->mail;
     $query['username'] = $account->name;
@@ -626,7 +641,7 @@ function spambot_report_account($account, $ip, $evidence) {
       'method' => 'POST',
       'data' => http_build_query($query, '', '&'),
     );
-    $result = drupal_http_request($url, $options);
+    $result = backdrop_http_request($url, $options);
 
     if (!empty($result->code) && $result->code == 200 && !empty($result->data) && stripos($result->data, 'data submitted successfully') !== FALSE) {
       $success = TRUE;
@@ -660,19 +675,20 @@ function spambot_report_account($account, $ip, $evidence) {
  *   TRUE if data is whitelisted, FALSE otherwise.
  */
 function spambot_check_whitelist($type, $value) {
+  $config = config('spambot.settings');
   switch ($type) {
     case 'ip':
-      $whitelist_ips = variable_get('spambot_whitelist_ip', '');
+      $whitelist_ips = $config->get('spambot_whitelist_ip');
       $result = strpos($whitelist_ips, $value) !== FALSE;
       break;
 
     case 'email':
-      $whitelist_usernames = variable_get('spambot_whitelist_email', '');
+      $whitelist_usernames = $config->get('spambot_whitelist_email');
       $result = strpos($whitelist_usernames, $value) !== FALSE;
       break;
 
     case 'username':
-      $whitelist_emails = variable_get('spambot_whitelist_username', '');
+      $whitelist_emails = $config->get('spambot_whitelist_username');
       $result = strpos($whitelist_emails, $value) !== FALSE;
       break;
 
@@ -696,7 +712,7 @@ function spambot_add_form_protection(array &$form, array $options = array()) {
   // Don't add any protections if the user can bypass the Spambot.
   if (!user_access('protected from spambot scans')) {
     // Allow other modules to alter the protections applied to this form.
-    drupal_alter('spambot_form_protections', $options, $form);
+    backdrop_alter('spambot_form_protections', $options, $form);
 
     $form['#spambot_validation']['name'] = !empty($options['name']) ? $options['name'] : '';
     $form['#spambot_validation']['mail'] = !empty($options['mail']) ? $options['mail'] : '';
@@ -749,7 +765,7 @@ function spambot_delete_nodes_and_comments($uid, $action) {
             ->condition('uid', $uid)
             ->execute();
         }
-        drupal_set_message(t('Nodes and comments have been unpublished.'));
+        backdrop_set_message(t('Nodes and comments have been unpublished.'));
         break;
       case 'delete_content':
         // Delete nodes and content.
@@ -758,7 +774,7 @@ function spambot_delete_nodes_and_comments($uid, $action) {
         if ($comments) {
           comment_delete_multiple($comments);
         }
-        drupal_set_message(t('Nodes and comments have been deleted.'));
+        backdrop_set_message(t('Nodes and comments have been deleted.'));
         break;
     }
   }
