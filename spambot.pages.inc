@@ -22,6 +22,15 @@ function spambot_user_spam($account) {
  * Form builder for spambot_user_spam_admin_form form.
  */
 function spambot_user_spam_admin_form($form, &$form_state, $account) {
+  // Don't show if user is protected from Spambot scans.
+  if (user_access('protected from spambot scans', $account)) {
+    $form['no-action'] = array(
+      '#markup' => t('This user is protected from from Spambot scans'),
+    );
+
+    return $form;
+  }
+
   $key = config_get('spambot.settings', 'spambot_sfs_api_key');
   $comments_enabled = module_exists('comment');
 

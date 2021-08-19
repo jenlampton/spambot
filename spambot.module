@@ -174,7 +174,7 @@ function spambot_cron() {
 
         if ($result > 0) {
           $link = l(t('spammer'), 'user/' . $account->uid);
-          switch (user_access('protected from spambot scans', $account)?SPAMBOT_ACTION_NONE : $action) {
+          switch (user_access('protected from spambot scans', $account) ? SPAMBOT_ACTION_NONE : $action) {
             case SPAMBOT_ACTION_BLOCK:
               if ($account->status) {
                 // Block spammer's account.
