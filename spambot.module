@@ -397,10 +397,8 @@ function spambot_sfs_request(array $query, array &$data) {
         }
       }
       if (!empty($data['username'])) {
-        foreach ($data['username'] as $data_username) {
-          $expire_username = $data_username['appears'] ? $expire : $expire_false;
-          cache_set("username:{$query['username']}", $data_username, 'cache_spambot', $expire_username);
-        }
+        $expire_username = $data['username']['appears'] ? $expire : $expire_false;
+        cache_set("username:{$query['username']}", $data['username'], 'cache_spambot', $expire_username);
       }
       if (!empty($data['ip'])) {
         $expire_ip = $data['ip']['appears'] ? $expire : $expire_false;
