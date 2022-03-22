@@ -102,7 +102,7 @@ function spambot_update_1000() {
 }
 
 /**
- * Implements hook_update_N(). Move last checked timestap to state system.
+ * Move last checked timestamp to state system.
  */
 function spambot_update_1001() {
   $last_chceked = config_get('spambot.settings', 'spambot_last_checked_uid');
