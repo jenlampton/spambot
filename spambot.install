@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Install and update hooks for Spambot module.
@@ -43,30 +42,37 @@ function spambot_schema() {
 }
 
 /**
+ * Implements hook_update_last_removed().
+ */
+function spambot_update_last_removed() {
+  return 7101;
+}
+
+/**
  * Migrate spambot variables to config.
  */
 function spambot_update_1000() {
   $config = config('spambot.settings');
-  $config->set('spambot_criteria_email', update_variable_get('spambot_criteria_email', SPAMBOT_DEFAULT_CRITERIA_EMAIL));
-  $config->set('spambot_criteria_username', update_variable_get('spambot_criteria_username', SPAMBOT_DEFAULT_CRITERIA_USERNAME));
-  $config->set('spambot_criteria_ip', update_variable_get('spambot_criteria_ip', SPAMBOT_DEFAULT_CRITERIA_IP));
+  $config->set('spambot_criteria_email', update_variable_get('spambot_criteria_email', 1));
+  $config->set('spambot_criteria_username', update_variable_get('spambot_criteria_username', 0));
+  $config->set('spambot_criteria_ip', update_variable_get('spambot_criteria_ip', 20));
   $config->set('spambot_whitelist_email', update_variable_get('spambot_whitelist_email', ''));
   $config->set('spambot_whitelist_username', update_variable_get('spambot_whitelist_username', ''));
   $config->set('spambot_whitelist_ip', update_variable_get('spambot_whitelist_ip', ''));
   $config->set('spambot_user_register_protect', update_variable_get('spambot_user_register_protect', TRUE));
-  $config->set('spambot_blacklisted_delay', update_variable_get('spambot_blacklisted_delay', SPAMBOT_DEFAULT_DELAY));
-  $config->set('spambot_cron_user_limit', update_variable_get('spambot_cron_user_limit', SPAMBOT_DEFAULT_CRON_USER_LIMIT));
+  $config->set('spambot_blacklisted_delay', update_variable_get('spambot_blacklisted_delay', 0));
+  $config->set('spambot_cron_user_limit', update_variable_get('spambot_cron_user_limit', 0));
   $config->set('spambot_check_blocked_accounts', update_variable_get('spambot_check_blocked_accounts', array()));
-  $config->set('spambot_spam_account_action', update_variable_get('spambot_spam_account_action', SPAMBOT_ACTION_NONE));
-  $config->set('spambot_spam_account_nodes_action', update_variable_get('spambot_spam_account_nodes_action', SPAMBOT_ACTION_NONE));
+  $config->set('spambot_spam_account_action', update_variable_get('spambot_spam_account_action', 0));
+  $config->set('spambot_spam_account_nodes_action', update_variable_get('spambot_spam_account_nodes_action', 0));
   $config->set('spambot_last_checked_uid', update_variable_get('spambot_last_checked_uid', '0'));
-  $config->set('spambot_blocked_message_email', update_variable_get('spambot_blocked_message_email', SPAMBOT_DEFAULT_BLOCKED_MESSAGE));
-  $config->set('spambot_blocked_message_username', update_variable_get('spambot_blocked_message_username', SPAMBOT_DEFAULT_BLOCKED_MESSAGE));
-  $config->set('spambot_blocked_message_ip', update_variable_get('spambot_blocked_message_ip', SPAMBOT_DEFAULT_BLOCKED_MESSAGE));
+  $config->set('spambot_blocked_message_email', update_variable_get('spambot_blocked_message_email', 'Your email address or username or IP address has been blocked.'));
+  $config->set('spambot_blocked_message_username', update_variable_get('spambot_blocked_message_username', 'Your email address or username or IP address has been blocked.'));
+  $config->set('spambot_blocked_message_ip', update_variable_get('spambot_blocked_message_ip', 'Your email address or username or IP address has been blocked.'));
   $config->set('spambot_log_blocked_registration', update_variable_get('spambot_log_blocked_registration', TRUE));
   $config->set('spambot_sfs_api_key', update_variable_get('spambot_sfs_api_key', array()));
   $config->set('spambot_enable_cache', update_variable_get('spambot_enable_cache', TRUE));
-  $config->set('spambot_cache_expire', update_variable_get('spambot_cache_expire', CACHE_PERMANENT));
+  $config->set('spambot_cache_expire', update_variable_get('spambot_cache_expire', 0));
   $config->set('spambot_cache_expire_false', update_variable_get('spambot_cache_expire_false', '300'));
   $config->set('spambot_blocked_message', update_variable_get('spambot_blocked_message', array()));
   $config->save();
@@ -96,8 +102,23 @@ function spambot_update_1000() {
 }
 
 /**
- * Implements hook_install().
+ * Move last checked timestamp to state system.
  */
-function spambot_install() {
-  // Dynamically generated variable data was detected.
+function spambot_update_1001() {
+  $last_chceked = config_get('spambot.settings', 'spambot_last_checked_uid');
+  state_set('spambot_last_checked_uid', $last_chceked);
+  config_clear('spambot.settings', 'spambot_last_checked_uid');
+}
+
+/**
+ * Adds a cache table for storage of StopForumSpam.com responses.
+ */
+function spambot_update_1002() {
+  // Duplicate of spambot_update_7102() for Drupal.
+  if (!db_table_exists('cache_spambot')) {
+    $schema = array();
+    $schema['cache_spambot'] = drupal_get_schema_unprocessed('system', 'cache');
+    $schema['cache_spambot']['description'] = 'Cache table for the Spambot module to store responses from www.stopforumspam.com';
+    db_create_table('cache_spambot', $schema['cache_spambot']);
+  }
 }
